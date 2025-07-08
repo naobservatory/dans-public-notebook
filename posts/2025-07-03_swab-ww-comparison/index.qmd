@@ -187,12 +187,14 @@ detection <- thinned_posteriors %>%
   group_by(rep, .add = TRUE) %>%
   mutate(
     mean_ww = prevalence * mu_ww * total_reads_ww * pr_junction_ww,
-    reads_ww = map2_int(phi_ww, mean_ww, ~ rnbinom(1, size = .x, mu = .y)),
+    reads_ww = rnbinom(n(), size = phi_ww, mu = mean_ww),
     cum_reads_ww = cumsum(reads_ww),
     # Number of swabs from infected people
-    pos_swabs = map_int(prevalence, ~ rbinom(1, size = swab_pool_size, prob = .x)),
+    pos_swabs = rbinom(n(), size = swab_pool_size, prob = prevalence),
     mean_swab = (pos_swabs / swab_pool_size) * mu_swab * total_reads_swab * pr_junction_swab,
-    reads_swab = map2_int(phi_swab, mean_swab, ~ rnbinom(1, size = .x, mu = .y)),
+    # Use a finite overdispersion when size and mu are both zero
+    # avoids generating NaNs. Should always give zero.
+    reads_swab = rnbinom(n(), size = pmax(phi_swab * pos_swabs, 1e-10), mu = mean_swab),
     cum_reads_swab = cumsum(reads_swab),
   ) %>%
   summarize(
@@ -202,12 +204,12 @@ detection <- thinned_posteriors %>%
     phi_swab = first(phi_swab),
     # If undetected, use 100% CI
     ci_at_detection_ww = if_else(
-      any(cum_reads_ww > detection_threshold),
+      any(cum_reads_ww >= detection_threshold),
       cumulative_incidence[which.max(cum_reads_ww >= detection_threshold)],
       1.0
     ),
     ci_at_detection_swab = if_else(
-      any(cum_reads_swab > detection_threshold),
+      any(cum_reads_swab >= detection_threshold),
       cumulative_incidence[which.max(cum_reads_swab >= detection_threshold)],
       1.0
     ),
@@ -217,13 +219,12 @@ detection <- thinned_posteriors %>%
 In a small number of replicates, a method does not detect the virus by the end of the simulations.
 In these cases, the cumulative incidence at detection is between 50% and 100%,
 and we record it as 100%.
-We can confirm that this is rare:
+We can confirm that this is rare (counts out of `r n_samples` replicates per virus):
 ```{r}
 #| label: undetected
 #| fig-cap: Number of replicates where the virus is not detected
 
 detection %>%
-  # filter(ci_at_detection_swab > 0.99 | ci_at_detection_ww > 0.99) %>%
   summarize(
     swab = sum(ci_at_detection_swab > 0.99),
     wastewater = sum(ci_at_detection_ww > 0.99)
