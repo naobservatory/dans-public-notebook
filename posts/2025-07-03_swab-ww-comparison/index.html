@@ -383,26 +383,28 @@ window.Quarto = {
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Number of swabs from infected people</span></span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">pos_swabs =</span> <span class="fu">rbinom</span>(<span class="fu">n</span>(), <span class="at">size =</span> swab_pool_size, <span class="at">prob =</span> prevalence),</span>
 <span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_swab =</span> (pos_swabs <span class="sc">/</span> swab_pool_size) <span class="sc">*</span> mu_swab <span class="sc">*</span> total_reads_swab <span class="sc">*</span> pr_junction_swab,</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">reads_swab =</span> <span class="fu">rnbinom</span>(<span class="fu">n</span>(), <span class="at">size =</span> phi_swab, <span class="at">mu =</span> mean_swab),</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">cum_reads_swab =</span> <span class="fu">cumsum</span>(reads_swab),</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">mu_ww =</span> <span class="fu">first</span>(mu_ww),</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">phi_ww =</span> <span class="fu">first</span>(phi_ww),</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">mu_swab =</span> <span class="fu">first</span>(mu_swab),</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">phi_swab =</span> <span class="fu">first</span>(phi_swab),</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># If undetected, use 100% CI</span></span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">ci_at_detection_ww =</span> <span class="fu">if_else</span>(</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>      <span class="fu">any</span>(cum_reads_ww <span class="sc">&gt;</span> detection_threshold),</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>      cumulative_incidence[<span class="fu">which.max</span>(cum_reads_ww <span class="sc">&gt;=</span> detection_threshold)],</span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>      <span class="fl">1.0</span></span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">ci_at_detection_swab =</span> <span class="fu">if_else</span>(</span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>      <span class="fu">any</span>(cum_reads_swab <span class="sc">&gt;</span> detection_threshold),</span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>      cumulative_incidence[<span class="fu">which.max</span>(cum_reads_swab <span class="sc">&gt;=</span> detection_threshold)],</span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>      <span class="fl">1.0</span></span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Use a finite overdispersion when size and mu are both zero</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># avoids generating NaNs. Should always give zero.</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">reads_swab =</span> <span class="fu">rnbinom</span>(<span class="fu">n</span>(), <span class="at">size =</span> <span class="fu">pmax</span>(phi_swab <span class="sc">*</span> pos_swabs, <span class="fl">1e-10</span>), <span class="at">mu =</span> mean_swab),</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">cum_reads_swab =</span> <span class="fu">cumsum</span>(reads_swab),</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">mu_ww =</span> <span class="fu">first</span>(mu_ww),</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">phi_ww =</span> <span class="fu">first</span>(phi_ww),</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">mu_swab =</span> <span class="fu">first</span>(mu_swab),</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">phi_swab =</span> <span class="fu">first</span>(phi_swab),</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># If undetected, use 100% CI</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">ci_at_detection_ww =</span> <span class="fu">if_else</span>(</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>      <span class="fu">any</span>(cum_reads_ww <span class="sc">&gt;</span> detection_threshold),</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>      cumulative_incidence[<span class="fu">which.max</span>(cum_reads_ww <span class="sc">&gt;=</span> detection_threshold)],</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>      <span class="fl">1.0</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">ci_at_detection_swab =</span> <span class="fu">if_else</span>(</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>      <span class="fu">any</span>(cum_reads_swab <span class="sc">&gt;</span> detection_threshold),</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>      cumulative_incidence[<span class="fu">which.max</span>(cum_reads_swab <span class="sc">&gt;=</span> detection_threshold)],</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>      <span class="fl">1.0</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>In a small number of replicates, a method does not detect the virus by the end of the simulations. In these cases, the cumulative incidence at detection is between 50% and 100%, and we record it as 100%. We can confirm that this is rare (counts out of 2000 replicates per virus):</p>
 <div class="cell">
@@ -430,37 +432,37 @@ window.Quarto = {
 </tr>
 <tr class="even">
 <td style="text-align: left;">HCoV-HKU1</td>
-<td style="text-align: right;">5</td>
+<td style="text-align: right;">0</td>
 <td style="text-align: right;">9</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">HCoV-NL63</td>
-<td style="text-align: right;">6</td>
+<td style="text-align: right;">0</td>
 <td style="text-align: right;">1</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">HCoV-OC43</td>
-<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
 <td style="text-align: right;">0</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Rhinovirus A</td>
-<td style="text-align: right;">9</td>
+<td style="text-align: right;">0</td>
 <td style="text-align: right;">2</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Rhinovirus B</td>
-<td style="text-align: right;">3</td>
+<td style="text-align: right;">0</td>
 <td style="text-align: right;">7</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Rhinovirus C</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
 <td style="text-align: right;">0</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">SARS-CoV-2</td>
-<td style="text-align: right;">5</td>
+<td style="text-align: right;">0</td>
 <td style="text-align: right;">0</td>
 </tr>
 </tbody>
@@ -517,10 +519,10 @@ HCoV-229E
 0.000723
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.000628
+0.000615
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-1.150
+1.175
 </td>
 </tr>
 <tr>
@@ -531,10 +533,10 @@ HCoV-HKU1
 0.004282
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.001516
+0.001364
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-2.824
+3.140
 </td>
 </tr>
 <tr>
@@ -545,10 +547,10 @@ HCoV-NL63
 0.003247
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.002431
+0.002126
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-1.336
+1.527
 </td>
 </tr>
 <tr>
@@ -559,10 +561,10 @@ HCoV-OC43
 0.001137
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.001654
+0.001453
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.688
+0.782
 </td>
 </tr>
 <tr>
@@ -573,10 +575,10 @@ Rhinovirus A
 0.004315
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.003939
+0.003714
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-1.096
+1.162
 </td>
 </tr>
 <tr>
@@ -587,10 +589,10 @@ Rhinovirus B
 0.005166
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.001764
+0.001626
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-2.930
+3.177
 </td>
 </tr>
 <tr>
@@ -601,10 +603,10 @@ Rhinovirus C
 0.000721
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.001370
+0.001275
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.526
+0.565
 </td>
 </tr>
 <tr>
@@ -615,10 +617,10 @@ SARS-CoV-2
 0.000018
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.000966
+0.000896
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.019
+0.021
 </td>
 </tr>
 </tbody>
