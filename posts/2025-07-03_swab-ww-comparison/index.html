@@ -378,12 +378,12 @@ window.Quarto = {
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(rep, <span class="at">.add =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_ww =</span> prevalence <span class="sc">*</span> mu_ww <span class="sc">*</span> total_reads_ww <span class="sc">*</span> pr_junction_ww,</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">reads_ww =</span> <span class="fu">map2_int</span>(phi_ww, mean_ww, <span class="sc">~</span> <span class="fu">rnbinom</span>(<span class="dv">1</span>, <span class="at">size =</span> .x, <span class="at">mu =</span> .y)),</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">reads_ww =</span> <span class="fu">rnbinom</span>(<span class="fu">n</span>(), <span class="at">size =</span> phi_ww, <span class="at">mu =</span> mean_ww),</span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">cum_reads_ww =</span> <span class="fu">cumsum</span>(reads_ww),</span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Number of swabs from infected people</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">pos_swabs =</span> <span class="fu">map_int</span>(prevalence, <span class="sc">~</span> <span class="fu">rbinom</span>(<span class="dv">1</span>, <span class="at">size =</span> swab_pool_size, <span class="at">prob =</span> .x)),</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">pos_swabs =</span> <span class="fu">rbinom</span>(<span class="fu">n</span>(), <span class="at">size =</span> swab_pool_size, <span class="at">prob =</span> prevalence),</span>
 <span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_swab =</span> (pos_swabs <span class="sc">/</span> swab_pool_size) <span class="sc">*</span> mu_swab <span class="sc">*</span> total_reads_swab <span class="sc">*</span> pr_junction_swab,</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">reads_swab =</span> <span class="fu">map2_int</span>(phi_swab, mean_swab, <span class="sc">~</span> <span class="fu">rnbinom</span>(<span class="dv">1</span>, <span class="at">size =</span> .x, <span class="at">mu =</span> .y)),</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">reads_swab =</span> <span class="fu">rnbinom</span>(<span class="fu">n</span>(), <span class="at">size =</span> phi_swab, <span class="at">mu =</span> mean_swab),</span>
 <span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">cum_reads_swab =</span> <span class="fu">cumsum</span>(reads_swab),</span>
 <span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
 <span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
@@ -404,16 +404,15 @@ window.Quarto = {
 <span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    ),</span>
 <span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>In a small number of replicates, a method does not detect the virus by the end of the simulations. In these cases, the cumulative incidence at detection is between 50% and 100%, and we record it as 100%. We can confirm that this is rare:</p>
+<p>In a small number of replicates, a method does not detect the virus by the end of the simulations. In these cases, the cumulative incidence at detection is between 50% and 100%, and we record it as 100%. We can confirm that this is rare (counts out of 2000 replicates per virus):</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>detection <span class="sc">%&gt;%</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># filter(ci_at_detection_swab &gt; 0.99 | ci_at_detection_ww &gt; 0.99) %&gt;%</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">swab =</span> <span class="fu">sum</span>(ci_at_detection_swab <span class="sc">&gt;</span> <span class="fl">0.99</span>),</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">wastewater =</span> <span class="fu">sum</span>(ci_at_detection_ww <span class="sc">&gt;</span> <span class="fl">0.99</span>)</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>group) <span class="sc">%&gt;%</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  kable</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">swab =</span> <span class="fu">sum</span>(ci_at_detection_swab <span class="sc">&gt;</span> <span class="fl">0.99</span>),</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">wastewater =</span> <span class="fu">sum</span>(ci_at_detection_ww <span class="sc">&gt;</span> <span class="fl">0.99</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>group) <span class="sc">%&gt;%</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  kable</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
 <thead>
