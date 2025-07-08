@@ -6,3 +6,6 @@
 
 /.quarto/
 /_site/
+posts/*/index_cache/
+posts/*/index_files/
+

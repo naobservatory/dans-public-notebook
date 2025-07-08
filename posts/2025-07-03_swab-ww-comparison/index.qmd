@@ -4,7 +4,6 @@ draft: true
 format:
   html:
     code-fold: false 
-    toc: true
 execute:
   cache: false
 knitr:
@@ -16,6 +15,23 @@ date: 2025-07-03
 date-modified: today
 ---
 
+[Recently](https://naobservatory.org/blog/swab-based-p2ra/),
+we used our paired wastewater and swab samples to jointly estimate the
+distribution of viral reads we expect to see in a sample of either type
+when a virus is at a given prevalence in the sampled population.
+Here, we use the fitted model to estimate the cumulative incidence at detection
+for both sample types using the following approach:
+
+1. Simulate an exponentially growing outbreak.
+2. Specify a particular sampling scheme for swabs and wastewater:
+number of swabs in a pool, sequencing depth, read length, etc.
+3. For each sample from our posterior distribution of the previously fitted
+read count model, simulate the timecourse of viral reads spanning a junction.
+4. Use the simulations to calculate the joint distribution of cumulative incidence at detection in both sample types.
+
+This is meant as a quick first pass at the problem, not a definitive
+account of the merits of swabs vs. wastewater.
+
 # Setup
 
 ```{r}
@@ -23,7 +39,6 @@ date-modified: today
 
 library(tidyverse)
 library(knitr)
-# library(here)
 library(slider)
 library(kableExtra)
 
@@ -58,23 +73,67 @@ scientific <- function(x) {
 
 # Geometric mean
 gm <- function(x) exp(mean(log(x)))
-
-# Load samples from posterior distributions
-posteriors <- read_tsv("https://raw.githubusercontent.com/naobservatory/swab-based-p2ra/refs/heads/main/tables/posteriors.tsv")
 ```
 
 # Model
 
+## Epidemic
+
+We assume an epidemic that grows (deterministically) exponentially starting
+from one infected person in a population of 2.5M people (roughly the DITP sewershed).
+We stop the simulation when $\approx 50\%$ of people have been infected.
+We also assume that infected people shed the virus deterministically for a fixed
+number of days, starting with the day they are infected.
+
 ```{r}
-#| label: parameters
+#| label: epi-model
+#| fig-cap: Epidemic progress by day
 
 # All times in days
 doubling_time <- 4
 growth_rate <- log(2) / doubling_time
 shedding_duration <- 7
 
+population_size <- 2.5e6
+# Grow until ~50% of people have been infected
+max_day <- floor(log(growth_rate * population_size / 2) / growth_rate)
+
+epi_model <- tibble(
+  day = 1:max_day,
+  # Exponential growth from a single case
+  incidence = exp(day * growth_rate) / population_size,
+  cumulative_incidence = cumsum(incidence),
+  # Assume constant shedding for `shedding_duration` days
+  prevalence = slide_dbl(incidence, sum, .before = shedding_duration - 1, .complete = FALSE)
+)
+
+epi_model %>%
+  ggplot(aes(x = day)) +
+  geom_line(aes(y = cumulative_incidence, color = "Cumulative Incidence")) +
+  geom_line(aes(y = prevalence, color = "Prevalence")) +
+  labs(x = NULL, y = NULL, color = NULL)
+```
+
+
+## Sampling and sequencing
+
+* We assume that the wastewater and pooled nasal swabs are collected every day,
+and that each sample is sequenced to a constant number of total reads.
+* For each sample type, we assume that all reads are the same length and that
+coverage is even along the genome so that
+the probability that a read covers the junction is the read length divided
+by the genome length.
+* We assume that a junction is detected when the cumulative number of reads that cover it across all samples is greater than or equal to a threshold.
+
+```{r}
+#| label: sampling-model
+
 # TODO: implement sampling interval. Currently implicitly daily
 # sampling_interval <- 1
+
+swab_pool_size <- 300
+total_reads_swab <- 2e6
+total_reads_ww <- 3e9
 
 # All lengths in bp
 genome_length <- 7000
@@ -85,36 +144,29 @@ read_length_ww <- 300
 pr_junction_swab <- read_length_swab / genome_length
 pr_junction_ww <- read_length_ww / genome_length
 
-swab_pool_size <- 300
-total_reads_swab <- 2e6
-total_reads_ww <- 3e9
-
-# Number of reads to detect a junction
+# Number of reads required to detect a junction
 detection_threshold <- 1
-```
-
-```{r}
-#| label: prevalence
-
-# Assume deterministic exponential growth starting from one case
-ditp_sewershed_population <- 2.5e6
-# Grow until ~50% of people have been infected
-max_time <- floor(log(growth_rate * ditp_sewershed_population / 2) / growth_rate)
-time <- 1:max_time
-incidence <- exp(time * growth_rate) / ditp_sewershed_population
-cumulative_incidence = cumsum(incidence)
-
-# Assume constant shedding for `shedding_duration` days
-shedding_prevalence <- slide_dbl(incidence, sum, .before = shedding_duration - 1, .complete = FALSE)
 ```
 
 # Simulations
 
-```{r}
-#| label: downsample
+For model and parameter definitions, see the [appendix](https://naobservatory.github.io/swab-based-p2ra/) to our blog post.
 
-# Randomly downsample the posteriors for Rhinoviruses and Coronaviruses
+First, we load our posterior samples from the swab-p2ra blog post repo.
+Then, we filter and downsample them in three ways:
+
+1. We take only the Rhinoviruses and Coronaviruses, the viruses for which we had
+enough of both swab and wastewater reads to get decent parameter estimates.
+2. We keep the read-model parameters: $\mu_{swab}$, $\phi_{swab}$, $\mu_{ww}$, and $\phi_{ww}$. (We don't need the estimates of the prevalence in the Boston samples since our simulations provide the prevalence of the virus.)
+3. To speed up experimentation, for each virus, we randomly downsample the posterior draws.
+
+```{r}
+#| label: posteriors
+
 n_samples = 2000
+
+posteriors <- read_tsv("https://raw.githubusercontent.com/naobservatory/swab-based-p2ra/refs/heads/main/tables/posteriors.tsv")
+
 thinned_posteriors <- posteriors %>%
   filter(group %in% c("Rhinoviruses", "Coronaviruses (seasonal)", "Coronaviruses (SARS-CoV-2)")) %>%
   select(species, group, mu_swab, phi_swab, mu_ww, phi_ww) %>%
@@ -123,19 +175,22 @@ thinned_posteriors <- posteriors %>%
   mutate(rep = 1:n()) 
 ```
 
+Next, for each virus and for each replicate (posterior draw), we simulate the wastewater
+and swab reads according to the model.
+We then summarize each replicate by the cumulative incidence at detection for each sample type.
+
 ```{r}
 #| label: simulate-detection
-#| cache: true
 
 detection <- thinned_posteriors %>%
-  cross_join(tibble(day = time, p = shedding_prevalence, ci = cumulative_incidence)) %>%
+  cross_join(epi_model) %>%
   group_by(rep, .add = TRUE) %>%
   mutate(
-    mean_ww = p * mu_ww * total_reads_ww * pr_junction_ww,
+    mean_ww = prevalence * mu_ww * total_reads_ww * pr_junction_ww,
     reads_ww = map2_int(phi_ww, mean_ww, ~ rnbinom(1, size = .x, mu = .y)),
     cum_reads_ww = cumsum(reads_ww),
     # Number of swabs from infected people
-    pos_swabs = map_int(p, ~ rbinom(1, size = swab_pool_size, prob = .x)),
+    pos_swabs = map_int(prevalence, ~ rbinom(1, size = swab_pool_size, prob = .x)),
     mean_swab = (pos_swabs / swab_pool_size) * mu_swab * total_reads_swab * pr_junction_swab,
     reads_swab = map2_int(phi_swab, mean_swab, ~ rnbinom(1, size = .x, mu = .y)),
     cum_reads_swab = cumsum(reads_swab),
@@ -148,22 +203,49 @@ detection <- thinned_posteriors %>%
     # If undetected, use 100% CI
     ci_at_detection_ww = if_else(
       any(cum_reads_ww > detection_threshold),
-      ci[which.max(cum_reads_ww >= detection_threshold)],
+      cumulative_incidence[which.max(cum_reads_ww >= detection_threshold)],
       1.0
     ),
     ci_at_detection_swab = if_else(
       any(cum_reads_swab > detection_threshold),
-      ci[which.max(cum_reads_swab >= detection_threshold)],
+      cumulative_incidence[which.max(cum_reads_swab >= detection_threshold)],
       1.0
     ),
   )
 ```
 
+In a small number of replicates, a method does not detect the virus by the end of the simulations.
+In these cases, the cumulative incidence at detection is between 50% and 100%,
+and we record it as 100%.
+We can confirm that this is rare:
+```{r}
+#| label: undetected
+#| fig-cap: Number of replicates where the virus is not detected
+
+detection %>%
+  # filter(ci_at_detection_swab > 0.99 | ci_at_detection_ww > 0.99) %>%
+  summarize(
+    swab = sum(ci_at_detection_swab > 0.99),
+    wastewater = sum(ci_at_detection_ww > 0.99)
+  ) %>%
+  select(-group) %>%
+  kable
+```
+
 # Results
+
+Below are the results of our simulations.
+Note that all the values here are conditional on the parameters defined
+in the Model section.
+If we change the pool sizes, sequencing depths, read lengths, etc, the comparisons
+will change.
+
+First, we summarize the simulations with the geometric mean cumulative incidence
+at detection for each virus and sample type:
 
 ```{r}
 #| label: geom-means
-#| fig-cap: Geometric mean CI at detection
+#| fig-cap: Geometric mean cumulative incidence at detection
 
 geom_means <- detection %>%
   summarize(
@@ -183,6 +265,8 @@ geom_means %>%
   column_spec(c(2, 3, 4), width = "3cm", monospace = TRUE) 
 ```
 
+We can also plot the full joint distributions of cumulative incidence at detection:
+
 ```{r}
 #| label: joint-distribution
 #| fig-cap: "Cumulative incidence at detection: wastewater vs. swab"
@@ -201,6 +285,8 @@ detection %>%
   labs(x = NULL, y = NULL)
   # labs(x = "CI at swab detection", y = "CI at wastewater detection")
 ```
+
+Finally, we can plot the distribution of the ratio of CI at detection in the two methods:
 
 ```{r}
 #| label: ratio
