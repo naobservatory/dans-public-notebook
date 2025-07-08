@@ -1,14 +1,13 @@
 ---
-title: "Dan's NAO notebook"
 listing:
   contents: posts
+  fields: [date, title]
   sort: "date desc"
-  type: default
-  categories: true
+  type: table
+  categories: false
   sort-ui: false
   filter-ui: false
+  date-format: "iso"
 page-layout: full
-title-block-banner: true
+title-block-banner: false
 ---
-
-
