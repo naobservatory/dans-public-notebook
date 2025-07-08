@@ -223,6 +223,7 @@ window.Quarto = {
   </ul></li>
   <li><a href="#simulations" id="toc-simulations" class="nav-link" data-scroll-target="#simulations">Simulations</a></li>
   <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results">Results</a></li>
+  <li><a href="#heuristic-analysis" id="toc-heuristic-analysis" class="nav-link" data-scroll-target="#heuristic-analysis">Heuristic analysis</a></li>
   </ul>
 </nav>
     </div>
@@ -395,12 +396,12 @@ window.Quarto = {
 <span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">phi_swab =</span> <span class="fu">first</span>(phi_swab),</span>
 <span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># If undetected, use 100% CI</span></span>
 <span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">ci_at_detection_ww =</span> <span class="fu">if_else</span>(</span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>      <span class="fu">any</span>(cum_reads_ww <span class="sc">&gt;</span> detection_threshold),</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>      <span class="fu">any</span>(cum_reads_ww <span class="sc">&gt;=</span> detection_threshold),</span>
 <span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>      cumulative_incidence[<span class="fu">which.max</span>(cum_reads_ww <span class="sc">&gt;=</span> detection_threshold)],</span>
 <span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>      <span class="fl">1.0</span></span>
 <span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    ),</span>
 <span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">ci_at_detection_swab =</span> <span class="fu">if_else</span>(</span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>      <span class="fu">any</span>(cum_reads_swab <span class="sc">&gt;</span> detection_threshold),</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>      <span class="fu">any</span>(cum_reads_swab <span class="sc">&gt;=</span> detection_threshold),</span>
 <span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>      cumulative_incidence[<span class="fu">which.max</span>(cum_reads_swab <span class="sc">&gt;=</span> detection_threshold)],</span>
 <span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>      <span class="fl">1.0</span></span>
 <span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>    ),</span>
@@ -428,12 +429,12 @@ window.Quarto = {
 <tr class="odd">
 <td style="text-align: left;">HCoV-229E</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">HCoV-HKU1</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">9</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">HCoV-NL63</td>
@@ -448,12 +449,12 @@ window.Quarto = {
 <tr class="odd">
 <td style="text-align: left;">Rhinovirus A</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Rhinovirus B</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">7</td>
+<td style="text-align: right;">4</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Rhinovirus C</td>
@@ -516,7 +517,7 @@ ratio
 HCoV-229E
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.000723
+0.000722
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
 0.000615
@@ -530,13 +531,13 @@ HCoV-229E
 HCoV-HKU1
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.004282
+0.004255
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
 0.001364
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-3.140
+3.120
 </td>
 </tr>
 <tr>
@@ -572,13 +573,13 @@ HCoV-OC43
 Rhinovirus A
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.004315
+0.004307
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
 0.003714
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-1.162
+1.160
 </td>
 </tr>
 <tr>
@@ -586,13 +587,13 @@ Rhinovirus A
 Rhinovirus B
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.005166
+0.005154
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
 0.001626
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-3.177
+3.169
 </td>
 </tr>
 <tr>
@@ -670,6 +671,200 @@ SARS-CoV-2
 </div>
 <p>CI at wastewater detection / CI at swab detection</p>
 </div>
+</section>
+<section id="heuristic-analysis" class="level1">
+<h1>Heuristic analysis</h1>
+<p>Do these numbers make sense? In particular, is it reasonable that with these parameters for most viruses, we expect similar cumulative incidence at detection for both sample types? As a sanity check, we can think about the prevalence required to expect to start seeing reads covering the junction. For wastewater, this is straightforward: it’s the prevalence at which <span class="math inline">\(p \mu_{ww}\)</span> times the sequencing depth times the probability of covering the junction is about one. For swabs, it’s more complicated. Very high <span class="math inline">\(\mu_{swab}\)</span> doesn’t help us if we don’t have any positive swabs. So instead we can ask two questions:</p>
+<ol type="1">
+<li>How many positive swabs do we need in our pool to expect to find reads overlapping the junction?</li>
+<li>Given our pool size, what prevalence do we need to expect to get that many positive swabs?</li>
+</ol>
+<p>Critically, we always need at least one positive swab, which puts a floor on the required prevalence at one over the pool size.</p>
+<p>This analysis leaves out a lot of details, but it should be a reasonable rough check.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>heuristics <span class="ot">&lt;-</span> thinned_posteriors <span class="sc">%&gt;%</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">prev_ww =</span> <span class="dv">1</span> <span class="sc">/</span> (mu_ww <span class="sc">*</span> total_reads_ww <span class="sc">*</span> pr_junction_ww),</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">reads_per_pos_swab =</span> mu_swab <span class="sc">*</span> total_reads_swab <span class="sc">*</span> pr_junction_swab <span class="sc">/</span> swab_pool_size,</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">swabs_to_detect =</span> <span class="fu">pmax</span>(<span class="dv">1</span>, <span class="dv">1</span> <span class="sc">/</span> reads_per_pos_swab),</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">prev_swab =</span> swabs_to_detect <span class="sc">/</span> swab_pool_size,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">ratio =</span> prev_ww <span class="sc">/</span> prev_swab,</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">across</span>(prev_ww<span class="sc">:</span>ratio, gm), </span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop"</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>heuristics <span class="sc">%&gt;%</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, swabs_to_detect, prev_ww, prev_swab, ratio) <span class="sc">%&gt;%</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="st">`</span><span class="at">pos swabs required</span><span class="st">`</span> <span class="ot">=</span> swabs_to_detect, <span class="at">wastewater =</span> prev_ww, <span class="at">swab =</span> prev_swab) <span class="sc">%&gt;%</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">digits =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="dv">3</span>, <span class="dv">5</span>, <span class="dv">5</span>, <span class="dv">3</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">column_spec</span>(<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>), <span class="at">width =</span> <span class="st">"3cm"</span>, <span class="at">monospace =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table>
+<thead>
+<tr>
+<th style="text-align:left;">
+species
+</th>
+<th style="text-align:right;">
+pos swabs required
+</th>
+<th style="text-align:right;">
+wastewater
+</th>
+<th style="text-align:right;">
+swab
+</th>
+<th style="text-align:right;">
+ratio
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+HCoV-229E
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+1.000
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.00486
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.00333
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+1.457
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+HCoV-HKU1
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+1.397
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.02939
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.00466
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+6.309
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+HCoV-NL63
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+2.100
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.02221
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.00700
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+3.172
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+HCoV-OC43
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+1.184
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.00773
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.00395
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+1.957
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Rhinovirus A
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+5.091
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.02796
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.01697
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+1.648
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Rhinovirus B
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+1.668
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.03677
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.00556
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+6.614
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Rhinovirus C
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+1.174
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.00481
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.00391
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+1.229
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SARS-CoV-2
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+1.026
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.00010
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.00342
+</td>
+<td style="text-align:right;width: 3cm; font-family: monospace;">
+0.029
+</td>
+</tr>
+</tbody>
+</table>
+<p>Geometric mean heuristic prevalence at detection</p>
+</div>
+</div>
+<p>In fact, by this heuristic, we do generally expect to start seeing reads in both sample types when the virus is at similar prevalence (ratios close to one). The exception is SARS-CoV-2, where <span class="math inline">\(\mu_{ww}\)</span> is very high.</p>
+<p>Note that most of these viruses are expected to be detected with around one positive swab in the pool.</p>
 
 
 </section>
