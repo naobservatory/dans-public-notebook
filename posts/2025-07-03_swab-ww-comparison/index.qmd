@@ -8,7 +8,7 @@ execute:
   cache: false
 knitr:
   opts_chunk: 
-    message: false
+    message: true
 editor: source 
 author: Dan Rice
 date: 2025-07-03
@@ -36,10 +36,14 @@ account of the merits of swabs vs. wastewater.
 
 ```{r}
 #| label: setup
+#| message: false
 
-library(tidyverse)
-library(knitr)
+library(dplyr)
+library(tibble)
+library(readr)
+library(ggplot2)
 library(slider)
+library(knitr)
 library(kableExtra)
 
 set.seed(20250703)
@@ -99,7 +103,7 @@ population_size <- 2.5e6
 max_day <- floor(log(growth_rate * population_size / 2) / growth_rate)
 
 epi_model <- tibble(
-  day = 1:max_day,
+  day = 0:max_day,
   # Exponential growth from a single case
   incidence = exp(day * growth_rate) / population_size,
   cumulative_incidence = cumsum(incidence),
@@ -165,14 +169,17 @@ enough of both swab and wastewater reads to get decent parameter estimates.
 
 n_samples = 2000
 
-posteriors <- read_tsv("https://raw.githubusercontent.com/naobservatory/swab-based-p2ra/refs/heads/main/tables/posteriors.tsv")
+posteriors <- read_tsv(
+  "https://raw.githubusercontent.com/naobservatory/swab-based-p2ra/refs/heads/main/tables/posteriors.tsv",
+  show_col_types = FALSE,
+  )
 
 thinned_posteriors <- posteriors %>%
   filter(group %in% c("Rhinoviruses", "Coronaviruses (seasonal)", "Coronaviruses (SARS-CoV-2)")) %>%
   select(species, group, mu_swab, phi_swab, mu_ww, phi_ww) %>%
   group_by(species, group) %>%
   slice_sample(n = n_samples) %>%
-  mutate(rep = 1:n()) 
+  mutate(rep = row_number()) 
 ```
 
 Next, for each virus and for each replicate (posterior draw), we simulate the wastewater
@@ -213,6 +220,7 @@ detection <- thinned_posteriors %>%
       cumulative_incidence[which.max(cum_reads_swab >= detection_threshold)],
       1.0
     ),
+    .groups = "drop_last",
   )
 ```
 
@@ -227,7 +235,8 @@ We can confirm that this is rare (counts out of `r n_samples` replicates per vir
 detection %>%
   summarize(
     swab = sum(ci_at_detection_swab > 0.99),
-    wastewater = sum(ci_at_detection_ww > 0.99)
+    wastewater = sum(ci_at_detection_ww > 0.99),
+    .groups = "drop",
   ) %>%
   select(-group) %>%
   kable
