@@ -304,4 +304,56 @@ detection %>%
 ```
 
 
+# Heuristic analysis
 
+Do these numbers make sense?
+In particular, is it reasonable that with these parameters for most viruses,
+we expect similar cumulative incidence at detection for both sample types?
+As a sanity check, we can think about the prevalence required to expect to start
+seeing reads covering the junction.
+For wastewater, this is straightforward: it's the prevalence at which
+$p \mu_{ww}$ times the sequencing depth times the probability of covering 
+the junction is about one.
+For swabs, it's more complicated.
+Very high $\mu_{swab}$ doesn't help us if we don't have any positive swabs.
+So instead we can ask two questions:
+
+1. How many positive swabs do we need in our pool to expect to find reads
+overlapping the junction?
+2. Given our pool size, what prevalence do we need to expect to get that many positive swabs?
+
+Critically, we always need at least one positive swab, which
+puts a floor on the required prevalence at one over the pool size.
+
+This analysis leaves out a lot of details, but it should be a reasonable rough check.
+
+```{r}
+#| label: sanity-check
+#| fig-cap: Geometric mean heuristic prevalence at detection
+
+heuristics <- thinned_posteriors %>%
+  mutate(
+    prev_ww = 1 / (mu_ww * total_reads_ww * pr_junction_ww),
+    reads_per_pos_swab = mu_swab * total_reads_swab * pr_junction_swab / swab_pool_size,
+    swabs_to_detect = pmax(1, 1 / reads_per_pos_swab),
+    prev_swab = swabs_to_detect / swab_pool_size,
+    ratio = prev_ww / prev_swab,
+  ) %>%
+  summarize(
+    across(prev_ww:ratio, gm), 
+    .groups = "drop"
+  )
+
+heuristics %>%
+  select(species, swabs_to_detect, prev_ww, prev_swab, ratio) %>%
+  rename(`pos swabs required` = swabs_to_detect, wastewater = prev_ww, swab = prev_swab) %>%
+  kable(digits = c(NA, 3, 5, 5, 3)) %>%
+  column_spec(c(2, 3, 4, 5), width = "3cm", monospace = TRUE)
+```
+
+In fact, by this heuristic, we do generally expect to start seeing reads
+in both sample types when the virus is at similar prevalence (ratios close to one).
+The exception is SARS-CoV-2, where $\mu_{ww}$ is very high.
+
+Note that most of these viruses are expected to be detected with around one
+positive swab in the pool.
