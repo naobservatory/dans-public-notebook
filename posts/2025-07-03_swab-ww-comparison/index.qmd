@@ -142,7 +142,7 @@ total_reads_ww <- 3e9
 # All lengths in bp
 genome_length <- 7000
 read_length_swab <- 2000
-read_length_ww <- 300
+read_length_ww <- 170
 
 # Probability that a read covers the junction, assuming even coverage
 pr_junction_swab <- read_length_swab / genome_length
@@ -293,7 +293,6 @@ detection %>%
   facet_wrap(~species, nrow = 2) +
   theme(legend.position = "none") +
   labs(x = NULL, y = NULL)
-  # labs(x = "CI at swab detection", y = "CI at wastewater detection")
 ```
 
 Finally, we can plot the distribution of the ratio of CI at detection in the two methods:
