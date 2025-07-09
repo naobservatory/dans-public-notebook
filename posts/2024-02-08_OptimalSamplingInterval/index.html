@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Dan Rice">
+<meta name="dcterms.date" content="2024-02-13">
+
+<title>NAO Cost Estimate MVP – Optimizing the sampling interval – Dan's NAO notebook</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Dan’s NAO notebook</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/naobservatory/dans-public-notebook"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">NAO Cost Estimate MVP – Optimizing the sampling interval</h1>
+                      </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Dan Rice </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">February 13, 2024</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#background" id="toc-background" class="nav-link active" data-scroll-target="#background">Background</a></li>
+  <li><a href="#a-two-component-cost-model" id="toc-a-two-component-cost-model" class="nav-link" data-scroll-target="#a-two-component-cost-model">A two-component cost model</a>
+  <ul class="collapse">
+  <li><a href="#limitations-of-the-two-component-model" id="toc-limitations-of-the-two-component-model" class="nav-link" data-scroll-target="#limitations-of-the-two-component-model">Limitations of the two-component model</a></li>
+  </ul></li>
+  <li><a href="#optimizing-the-sampling-interval" id="toc-optimizing-the-sampling-interval" class="nav-link" data-scroll-target="#optimizing-the-sampling-interval">Optimizing the sampling interval</a>
+  <ul class="collapse">
+  <li><a href="#grab-sampling" id="toc-grab-sampling" class="nav-link" data-scroll-target="#grab-sampling">Grab sampling</a></li>
+  <li><a href="#continuous-sampling" id="toc-continuous-sampling" class="nav-link" data-scroll-target="#continuous-sampling">Continuous sampling</a></li>
+  <li><a href="#windowed-composite-sampling" id="toc-windowed-composite-sampling" class="nav-link" data-scroll-target="#windowed-composite-sampling">Windowed composite sampling</a></li>
+  <li><a href="#general-properties" id="toc-general-properties" class="nav-link" data-scroll-target="#general-properties">General properties</a></li>
+  </ul></li>
+  <li><a href="#a-numerical-example" id="toc-a-numerical-example" class="nav-link" data-scroll-target="#a-numerical-example">A numerical example</a>
+  <ul class="collapse">
+  <li><a href="#optimal-delta-t" id="toc-optimal-delta-t" class="nav-link" data-scroll-target="#optimal-delta-t">Optimal <span class="math inline">\(\delta t\)</span></a></li>
+  <li><a href="#cost-sensitivity-to-delta-t" id="toc-cost-sensitivity-to-delta-t" class="nav-link" data-scroll-target="#cost-sensitivity-to-delta-t">Cost sensitivity to <span class="math inline">\(\delta t\)</span></a></li>
+  <li><a href="#sensitivity-of-optimal-delta-t-to-p2ra-factor" id="toc-sensitivity-of-optimal-delta-t-to-p2ra-factor" class="nav-link" data-scroll-target="#sensitivity-of-optimal-delta-t-to-p2ra-factor">Sensitivity of optimal <span class="math inline">\(\delta t\)</span> to P2RA factor</a></li>
+  </ul></li>
+  <li><a href="#a-second-example-faster-growth-and-longer-delay" id="toc-a-second-example-faster-growth-and-longer-delay" class="nav-link" data-scroll-target="#a-second-example-faster-growth-and-longer-delay">A second example: Faster growth and longer delay</a>
+  <ul class="collapse">
+  <li><a href="#cost-sensitivity-to-delta-t-1" id="toc-cost-sensitivity-to-delta-t-1" class="nav-link" data-scroll-target="#cost-sensitivity-to-delta-t-1">Cost sensitivity to <span class="math inline">\(\delta t\)</span></a></li>
+  <li><a href="#sensitivity-of-optimal-delta-t-to-p2ra-factor-1" id="toc-sensitivity-of-optimal-delta-t-to-p2ra-factor-1" class="nav-link" data-scroll-target="#sensitivity-of-optimal-delta-t-to-p2ra-factor-1">Sensitivity of optimal <span class="math inline">\(\delta t\)</span> to P2RA factor</a></li>
+  </ul></li>
+  <li><a href="#cost-sensitivity-to-the-latency-t_d" id="toc-cost-sensitivity-to-the-latency-t_d" class="nav-link" data-scroll-target="#cost-sensitivity-to-the-latency-t_d">Cost sensitivity to the latency, <span class="math inline">\(t_d\)</span></a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<section id="background" class="level2">
+<h2 class="anchored" data-anchor-id="background">Background</h2>
+<p>See <a href="../../posts/2024-02-02_CostEstimateMVP/index.html">previous notebook</a>. The goal of this notebook is to use our simple, deterministic cost estimate to answer the question:</p>
+<blockquote class="blockquote">
+<p>How often should we process and sequence samples?</p>
+</blockquote>
+<p>We want to understand the tradeoff between:</p>
+<ol type="1">
+<li>catching the virus earlier by sampling more frequently, and</li>
+<li>saving on processing costs by sampling less frequently.</li>
+</ol>
+<p>To this end, we posit a two-component cost model:</p>
+<ul>
+<li>Per-read sequencing costs, and</li>
+<li>Per-sample processing costs</li>
+</ul>
+<p>and find the optimal sampling interval <span class="math inline">\(\delta t\)</span> that minimizes total costs, while sequencing to sufficient depth per sample <span class="math inline">\(n\)</span> to detect a virus by cumulative incidence <span class="math inline">\(\hat{c}\)</span>.</p>
+</section>
+<section id="a-two-component-cost-model" class="level2">
+<h2 class="anchored" data-anchor-id="a-two-component-cost-model">A two-component cost model</h2>
+<p>Consider the cost averaged over a long time interval <span class="math inline">\(T\)</span> in which we will take many samples. If we collect and process samples every <span class="math inline">\(\delta t\)</span> days, we will take <span class="math inline">\(T / \delta t\)</span> samples in this interval. If we sample <span class="math inline">\(n\)</span> reads per sample, our total sequencing depth is <span class="math inline">\(n \frac{\delta t}{T}\)</span> reads. Assume that our costs can be divided into a per-sample cost <span class="math inline">\(d_s\)</span> (including costs of collection, transportation, and processing for sequencing) and a per-read cost <span class="math inline">\(d_r\)</span> of sequencing. (Note: the <span class="math inline">\(d\)</span> is sort of awkward because we’ve already used <span class="math inline">\(c\)</span> for “cumulative incidence”. You can think of it as standing for “dollars”.)</p>
+<p>We will seek to minimize the total cost of detection: <span class="math display">\[
+d_{\text{tot}} = d_s \frac{T}{\delta t} + d_r \frac{nT}{\delta t}.
+\]</span> Equivalently, we can divide by the arbitrary time-interval <span class="math inline">\(T\)</span> to get the total rate of spending: <span class="math display">\[
+\frac{d_{\text{tot}}}{T} = \frac{d_s}{\delta t} + d_r \frac{n}{\delta t}.
+\]</span></p>
+<p>In our <a href="../../posts/2024-02-02_CostEstimateMVP/index.html">previous post</a>, we found that the read depth per time required to detect a virus by the time it reaches cumulative incidence <span class="math inline">\(\hat{c}\)</span> is:</p>
+<p><span class="math display">\[
+\frac{n}{\delta t} = (r + \beta) \left(\frac{\hat{K}}{b \hat{c}}\right) e^{r t_d} f(r \delta t)
+\]</span></p>
+<p>where the function <span class="math inline">\(f\)</span> depends on the sampling scheme. Substituting this into the rate of spending, we have: <span class="math display">\[
+\frac{d_{\text{tot}}}{T} = \frac{d_s}{\delta t} + (r + \beta) \left(\frac{\hat{K}}{b \hat{c}}\right) e^{r t_d} d_r f(r \delta t).
+\]</span></p>
+<p>In the next section, we will find the value of <span class="math inline">\(\delta t\)</span> that minimizes the rate of spending.</p>
+<section id="limitations-of-the-two-component-model" class="level3">
+<h3 class="anchored" data-anchor-id="limitations-of-the-two-component-model">Limitations of the two-component model</h3>
+<ul>
+<li>We assume that we process each sample as it comes in. In practice, we could stockpile a set of <span class="math inline">\(m\)</span> samples and process them simultaneously. This would require splitting out the cost of sampling from the cost of sample prep.</li>
+<li>We do not consider the fact that sequencing (and presumably to some extent sample prep) unit costs decrease with greater depth. (I.e., it’s cheaper per-read to do bigger runs.)</li>
+<li>We neglect the “batch” effects of sequencing. Typically you buy sequencing in units of “lanes” rather than asking for an arbitrary number of reads. This will introduce threshold effects, where we want to batach our samples to use lanes efficiently.</li>
+<li>We do not account for fixed costs that accumulate per unit time regardless of our sampling and sequencing protocols. These do not affect the optimization here, but they do add to the total cost of the system.</li>
+</ul>
+</section>
+</section>
+<section id="optimizing-the-sampling-interval" class="level2">
+<h2 class="anchored" data-anchor-id="optimizing-the-sampling-interval">Optimizing the sampling interval</h2>
+<p>To find the optimal <span class="math inline">\(\delta t\)</span>, we look for a zero of the derivative of spending rate:</p>
+<p><span class="math display">\[
+\begin{align}
+\frac{d}{d \delta t} \frac{d_{\text{tot}}}{T} &amp; = - \frac{d_s}{{\delta t}^2} + (r + \beta) \left(\frac{\hat{K}}{b \hat{c}}\right) e^{r t_d} d_r r f'(r\delta t).
+\end{align}
+\]</span></p>
+<p>Setting the right-hand side equal to zero and rearranging gives:</p>
+<p><span class="math display">\[
+{(r \delta t)}^2 f'(r \delta t) = \frac{d_s}{d_r} \frac{b \hat{c}}{\hat{K}} \left(\frac{r}{r + \beta}\right) e^{-r t_d}
+\]</span></p>
+<p>To get any farther, we need to specify <span class="math inline">\(f\)</span> and therefore a sampling scheme. [Note: If we give some general properties of <span class="math inline">\(f\)</span>, we can say some things here that are general to the sampling scheme]</p>
+<section id="grab-sampling" class="level3">
+<h3 class="anchored" data-anchor-id="grab-sampling">Grab sampling</h3>
+<p>We first consider grab sampling, where the entire sample is collected at the sampling time. In that case, we have: <span class="math display">\[
+\begin{align}
+f(x) &amp; = \frac{e^{-x}{(e^x - 1)}^2}{x^2} \\
+     &amp; = 1 + \frac{x^2}{12} + \mathcal{O}(x^3).
+\end{align}
+\]</span> We are particularly interested in the small-<span class="math inline">\(x\)</span> regime: The depth required becomes exponentially large when <span class="math inline">\(r \delta t \gg 1\)</span>, so it is likely that the optimal interval satisfies <span class="math inline">\(r \delta t \lesssim 1\)</span>. We can check this for self-consistency in any specific numerical examples.</p>
+<p>This gives us the derivative: <span class="math display">\[
+f'(x) \approx \frac{x}{6}.
+\]</span></p>
+<p>Using this in our optimization equation yields: <span class="math display">\[
+{(r \delta t)}^3 \approx 6 \frac{d_s}{d_r} \frac{b \hat{c}}{\hat{K}} \left(\frac{r}{r + \beta}\right) e^{-r t_d}.
+\]</span></p>
+</section>
+<section id="continuous-sampling" class="level3">
+<h3 class="anchored" data-anchor-id="continuous-sampling">Continuous sampling</h3>
+<p>In the case of continuous sampling, where the sample taken at time <span class="math inline">\(t\)</span> is a composite sample uniformly collected over the interval <span class="math inline">\([t - \delta t, t)\)</span>, we have: <span class="math display">\[
+\begin{align}
+f(x) &amp; = \frac{e^x - 1}{x} \\
+     &amp; = 1 + \frac{x}{2} + \mathcal{O}(x^2) \\
+f'(x) &amp; \approx \frac{1}{2}
+\end{align}
+\]</span> for small <span class="math inline">\(x\)</span>. Note the difference in functional form from the grab sample case.</p>
+<p>Substituting this into the optimization equation yields: <span class="math display">\[
+{(r \delta t)}^2 \approx 2 \frac{d_s}{d_r} \frac{b \hat{c}}{\hat{K}} \left(\frac{r}{r + \beta}\right) e^{-r t_d}.
+\]</span></p>
+</section>
+<section id="windowed-composite-sampling" class="level3">
+<h3 class="anchored" data-anchor-id="windowed-composite-sampling">Windowed composite sampling</h3>
+<p>An intermediate (and more realistic) model of sampling is windowed composite sampling. In this scheme, the sample at time <span class="math inline">\(t\)</span> is a composite sample taken over a window of width <span class="math inline">\(w\)</span> (e.g., 24hours) from <span class="math inline">\(t - w\)</span> to <span class="math inline">\(t\)</span>. Notably, when the sampling interval (<span class="math inline">\(\delta t\)</span>) increases, the length of the window does not. In this case we have:</p>
+<p><span class="math display">\[
+\begin{align}
+f(x) &amp; = \frac{rw}{1 - e^{-rw}} \frac{e^{-x}{(e^x - 1)}^2}{x^2} \\
+     &amp; \approx \left(1 + \frac{rw}{2}\right) \frac{e^{-x}{(e^x - 1)}^2}{x^2} \\
+     &amp; \approx \left(1 + \frac{rw}{2}\right) + \left(1 + \frac{rw}{2}\right) \left(\frac{x^2}{12}\right) \\
+f'(x) &amp; \approx \left(1 + \frac{rw}{2}\right) \left(\frac{x}{6}\right) \\
+\end{align}
+\]</span> for small <span class="math inline">\(rw\)</span> and <span class="math inline">\(x\)</span>. Note that as <span class="math inline">\(rw \to 0\)</span>, we recover grab sampling.</p>
+<p>Since we’re keeping only the leading term in <span class="math inline">\(x = r \delta t\)</span>, and <span class="math inline">\(w \leq \delta t\)</span>, for consistency we should also drop the <span class="math inline">\(\frac{rw}{2}\)</span> (or keep more terms of the expansion). Thus, we’ll treat windowed composite sampling for small windows as equivalent to grab sampling. The key reason for this is that changing the sampling interval does not change the window. Note that for <span class="math inline">\(\delta t \approx w\)</span>, i.e.&nbsp;<span class="math inline">\(x \approx rw\)</span>, <span class="math inline">\(f(x) \approx 1 + \frac{rw}{2}\)</span>, just as with continuous sampling, but <span class="math inline">\(f'(x)\)</span> still behaves like grab sampling.</p>
+</section>
+<section id="general-properties" class="level3">
+<h3 class="anchored" data-anchor-id="general-properties">General properties</h3>
+<p>In general, we have: <span class="math display">\[
+r \delta t \approx {\left( a\frac{d_s}{d_r} \frac{b \hat{c}}{\hat{K}} \left(\frac{r}{r + \beta}\right) e^{-r t_d} \right)}^{1 / \gamma},
+\]</span> where <span class="math inline">\(a\)</span> and <span class="math inline">\(\gamma\)</span> are positive constants that depend on the sampling scheme. We can observe some general features:</p>
+<ul>
+<li>Faster-growing viruses (higher <span class="math inline">\(r\)</span>) <strong>decreases</strong> the optimal sampling interval.</li>
+<li>Increasing the cost per sample <span class="math inline">\(d_s\)</span> <strong>increases</strong> the optimal sampling interval.</li>
+<li>Increasing the cost per read <span class="math inline">\(d_r\)</span> <strong>decreases</strong> the optimal sampling interval.</li>
+<li>Increasing the P2RA factor <span class="math inline">\(b\)</span> or the target cumulative incidence <span class="math inline">\(c\)</span> <strong>increases</strong> the optimal sampling interval.</li>
+<li>Increasing the detection threshold <span class="math inline">\(\hat{K}\)</span> <strong>decreases</strong> the optimal sampling interval.</li>
+<li>Increasing the delay between sampling and detection <span class="math inline">\(t_d\)</span> <strong>decreases</strong> the optimal sampling interval.</li>
+</ul>
+<p>One general trend is: the more optimistic we are about our method (higher <span class="math inline">\(b\)</span>, smaller <span class="math inline">\(\hat{K}\)</span>, shorter <span class="math inline">\(t_d\)</span>), the longer we can wait between samples.</p>
+<p>We can also substitute our equation for <span class="math inline">\(n / \delta t\)</span> into this equation, use <span class="math inline">\(f(\delta t) \approx 1\)</span> and rearrange to get: <span class="math display">\[
+n d_r \approx \frac{a}{{(r \delta t)}^{\gamma - 1}} d_s.
+\]</span> The left-hand side of this equation is the cost spent on sequencing per sample. For continuous sampling, <span class="math inline">\(\gamma = 2\)</span> and for grab sampling and windowed composite, <span class="math inline">\(\gamma = 3\)</span>. Since <span class="math inline">\(r \delta t \ll 1\)</span>, this tells us that we typically should spend more money on sequencing than sample processing.</p>
+</section>
+</section>
+<section id="a-numerical-example" class="level2">
+<h2 class="anchored" data-anchor-id="a-numerical-example">A numerical example</h2>
+<section id="optimal-delta-t" class="level3">
+<h3 class="anchored" data-anchor-id="optimal-delta-t">Optimal <span class="math inline">\(\delta t\)</span></h3>
+<div id="94e29ff8" class="cell" data-execution_count="1">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="94e29ff8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="94e29ff8-1"><a href="#94e29ff8-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="94e29ff8-2"><a href="#94e29ff8-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="94e29ff8-3"><a href="#94e29ff8-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Optional</span>
+<span id="94e29ff8-4"><a href="#94e29ff8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="94e29ff8-5"><a href="#94e29ff8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="94e29ff8-6"><a href="#94e29ff8-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> optimal_interval(</span>
+<span id="94e29ff8-7"><a href="#94e29ff8-7" aria-hidden="true" tabindex="-1"></a>    per_sample_cost: <span class="bu">float</span>,</span>
+<span id="94e29ff8-8"><a href="#94e29ff8-8" aria-hidden="true" tabindex="-1"></a>    per_read_cost: <span class="bu">float</span>,</span>
+<span id="94e29ff8-9"><a href="#94e29ff8-9" aria-hidden="true" tabindex="-1"></a>    growth_rate: <span class="bu">float</span>,</span>
+<span id="94e29ff8-10"><a href="#94e29ff8-10" aria-hidden="true" tabindex="-1"></a>    recovery_rate: <span class="bu">float</span>,</span>
+<span id="94e29ff8-11"><a href="#94e29ff8-11" aria-hidden="true" tabindex="-1"></a>    read_threshold: <span class="bu">int</span>,</span>
+<span id="94e29ff8-12"><a href="#94e29ff8-12" aria-hidden="true" tabindex="-1"></a>    p2ra_factor: <span class="bu">float</span>,</span>
+<span id="94e29ff8-13"><a href="#94e29ff8-13" aria-hidden="true" tabindex="-1"></a>    cumulative_incidence_target: <span class="bu">float</span>,</span>
+<span id="94e29ff8-14"><a href="#94e29ff8-14" aria-hidden="true" tabindex="-1"></a>    sampling_scheme: <span class="bu">str</span>,</span>
+<span id="94e29ff8-15"><a href="#94e29ff8-15" aria-hidden="true" tabindex="-1"></a>    delay: <span class="bu">float</span>,</span>
+<span id="94e29ff8-16"><a href="#94e29ff8-16" aria-hidden="true" tabindex="-1"></a>    composite_window: Optional[<span class="bu">float</span>] <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="94e29ff8-17"><a href="#94e29ff8-17" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="94e29ff8-18"><a href="#94e29ff8-18" aria-hidden="true" tabindex="-1"></a>    constant_term <span class="op">=</span> (</span>
+<span id="94e29ff8-19"><a href="#94e29ff8-19" aria-hidden="true" tabindex="-1"></a>        (per_sample_cost <span class="op">/</span> per_read_cost)</span>
+<span id="94e29ff8-20"><a href="#94e29ff8-20" aria-hidden="true" tabindex="-1"></a>        <span class="op">*</span> ((p2ra_factor <span class="op">*</span> cumulative_incidence_target) <span class="op">/</span> read_threshold)</span>
+<span id="94e29ff8-21"><a href="#94e29ff8-21" aria-hidden="true" tabindex="-1"></a>        <span class="op">*</span> (growth_rate <span class="op">/</span> (growth_rate <span class="op">+</span> recovery_rate))</span>
+<span id="94e29ff8-22"><a href="#94e29ff8-22" aria-hidden="true" tabindex="-1"></a>        <span class="op">*</span> np.exp(<span class="op">-</span>growth_rate <span class="op">*</span> delay)</span>
+<span id="94e29ff8-23"><a href="#94e29ff8-23" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="94e29ff8-24"><a href="#94e29ff8-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> sampling_scheme <span class="op">==</span> <span class="st">"continuous"</span>:</span>
+<span id="94e29ff8-25"><a href="#94e29ff8-25" aria-hidden="true" tabindex="-1"></a>        a <span class="op">=</span> <span class="dv">2</span></span>
+<span id="94e29ff8-26"><a href="#94e29ff8-26" aria-hidden="true" tabindex="-1"></a>        b <span class="op">=</span> <span class="dv">2</span></span>
+<span id="94e29ff8-27"><a href="#94e29ff8-27" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> sampling_scheme <span class="op">==</span> <span class="st">"grab"</span>:</span>
+<span id="94e29ff8-28"><a href="#94e29ff8-28" aria-hidden="true" tabindex="-1"></a>        a <span class="op">=</span> <span class="dv">6</span></span>
+<span id="94e29ff8-29"><a href="#94e29ff8-29" aria-hidden="true" tabindex="-1"></a>        b <span class="op">=</span> <span class="dv">3</span></span>
+<span id="94e29ff8-30"><a href="#94e29ff8-30" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> sampling_scheme <span class="op">==</span> <span class="st">"composite"</span>:</span>
+<span id="94e29ff8-31"><a href="#94e29ff8-31" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> composite_window:</span>
+<span id="94e29ff8-32"><a href="#94e29ff8-32" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"For composite sampling, must provide a composite_window"</span>)</span>
+<span id="94e29ff8-33"><a href="#94e29ff8-33" aria-hidden="true" tabindex="-1"></a>        a <span class="op">=</span> (</span>
+<span id="94e29ff8-34"><a href="#94e29ff8-34" aria-hidden="true" tabindex="-1"></a>            <span class="dv">6</span></span>
+<span id="94e29ff8-35"><a href="#94e29ff8-35" aria-hidden="true" tabindex="-1"></a>            <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> np.exp(<span class="op">-</span>growth_rate <span class="op">*</span> composite_window))</span>
+<span id="94e29ff8-36"><a href="#94e29ff8-36" aria-hidden="true" tabindex="-1"></a>            <span class="op">/</span> (growth_rate <span class="op">*</span> composite_window)</span>
+<span id="94e29ff8-37"><a href="#94e29ff8-37" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="94e29ff8-38"><a href="#94e29ff8-38" aria-hidden="true" tabindex="-1"></a>        b <span class="op">=</span> <span class="dv">3</span></span>
+<span id="94e29ff8-39"><a href="#94e29ff8-39" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="94e29ff8-40"><a href="#94e29ff8-40" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"sampling_scheme must be continuous or grab"</span>)</span>
+<span id="94e29ff8-41"><a href="#94e29ff8-41" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> (a <span class="op">*</span> constant_term) <span class="op">**</span> (<span class="dv">1</span> <span class="op">/</span> b) <span class="op">/</span> growth_rate</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<p>I asked the NAO in <a href="https://twist.com/a/197793/ch/565514/t/5896609/">Twist</a> for info on sequencing and sample-processing costs. Based on their answers, reasonable order-of-magnitude estimate are:</p>
+<pre><code>- sample costs: $500 / sample
+- sequencing costs: $5K / billion reads</code></pre>
+<p>Note that 1 billion reads cost roughly 10x the cost to prepare one sample. As discussed above, our cost model is highly simplified and the specifics of when samples are collected, transported, processed, and batched for sequencing will make this calculation much more complicated in practice.</p>
+<p>Let’s use these numbers plus our virus model from the <a href="../../posts/2024-02-02_CostEstimateMVP/index.html#numerical-example">last post</a> to find the optimal sampling interval:</p>
+<div id="e1b36a38" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="e1b36a38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="e1b36a38-1"><a href="#e1b36a38-1" aria-hidden="true" tabindex="-1"></a>d_s <span class="op">=</span> <span class="dv">500</span></span>
+<span id="e1b36a38-2"><a href="#e1b36a38-2" aria-hidden="true" tabindex="-1"></a>d_r <span class="op">=</span> <span class="dv">5000</span> <span class="op">*</span> <span class="fl">1e-9</span></span>
+<span id="e1b36a38-3"><a href="#e1b36a38-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="e1b36a38-4"><a href="#e1b36a38-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Weekly doubling</span></span>
+<span id="e1b36a38-5"><a href="#e1b36a38-5" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> np.log(<span class="dv">2</span>) <span class="op">/</span> <span class="dv">7</span></span>
+<span id="e1b36a38-6"><a href="#e1b36a38-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Recovery in two weeks</span></span>
+<span id="e1b36a38-7"><a href="#e1b36a38-7" aria-hidden="true" tabindex="-1"></a>beta <span class="op">=</span> <span class="dv">1</span> <span class="op">/</span> <span class="dv">14</span></span>
+<span id="e1b36a38-8"><a href="#e1b36a38-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Detect when 100 cumulative reads</span></span>
+<span id="e1b36a38-9"><a href="#e1b36a38-9" aria-hidden="true" tabindex="-1"></a>k_hat <span class="op">=</span> <span class="dv">100</span></span>
+<span id="e1b36a38-10"><a href="#e1b36a38-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Median P2RA factor for SARS-CoV-2 in Rothman</span></span>
+<span id="e1b36a38-11"><a href="#e1b36a38-11" aria-hidden="true" tabindex="-1"></a>ra_i_01 <span class="op">=</span> <span class="fl">1e-7</span></span>
+<span id="e1b36a38-12"><a href="#e1b36a38-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert from weekly incidence to prevalence and per 1% to per 1</span></span>
+<span id="e1b36a38-13"><a href="#e1b36a38-13" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> ra_i_01 <span class="op">*</span> <span class="dv">100</span> <span class="op">*</span> (r <span class="op">+</span> beta) <span class="op">*</span> <span class="dv">7</span></span>
+<span id="e1b36a38-14"><a href="#e1b36a38-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Goal of detecting by 1% cumulative incidence</span></span>
+<span id="e1b36a38-15"><a href="#e1b36a38-15" aria-hidden="true" tabindex="-1"></a>c_hat <span class="op">=</span> <span class="fl">0.01</span></span>
+<span id="e1b36a38-16"><a href="#e1b36a38-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Delay from sampling to detecting of 1 week</span></span>
+<span id="e1b36a38-17"><a href="#e1b36a38-17" aria-hidden="true" tabindex="-1"></a>t_d <span class="op">=</span> <span class="fl">7.0</span></span>
+<span id="e1b36a38-18"><a href="#e1b36a38-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="e1b36a38-19"><a href="#e1b36a38-19" aria-hidden="true" tabindex="-1"></a>delta_t_grab <span class="op">=</span> optimal_interval(d_s, d_r, r, beta, k_hat, b, c_hat, <span class="st">"grab"</span>, t_d)</span>
+<span id="e1b36a38-20"><a href="#e1b36a38-20" aria-hidden="true" tabindex="-1"></a>delta_t_cont <span class="op">=</span> optimal_interval(d_s, d_r, r, beta, k_hat, b, c_hat, <span class="st">"continuous"</span>, t_d)</span>
+<span id="e1b36a38-21"><a href="#e1b36a38-21" aria-hidden="true" tabindex="-1"></a>delta_t_24hr <span class="op">=</span> optimal_interval(d_s, d_r, r, beta, k_hat, b, c_hat, <span class="st">"composite"</span>, t_d, <span class="dv">1</span>)</span>
+<span id="e1b36a38-22"><a href="#e1b36a38-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="e1b36a38-23"><a href="#e1b36a38-23" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Optimal sampling interval with grab sampling:</span><span class="ch">\t\t</span><span class="sc">{</span>delta_t_grab<span class="sc">:.2f}</span><span class="ss"> days"</span>)</span>
+<span id="e1b36a38-24"><a href="#e1b36a38-24" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\t</span><span class="ss">r delta_t = </span><span class="sc">{</span>r<span class="op">*</span>delta_t_grab<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="e1b36a38-25"><a href="#e1b36a38-25" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Optimal sampling interval with continuous sampling:</span><span class="ch">\t</span><span class="sc">{</span>delta_t_cont<span class="sc">:.2f}</span><span class="ss"> days"</span>)</span>
+<span id="e1b36a38-26"><a href="#e1b36a38-26" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\t</span><span class="ss">r delta_t = </span><span class="sc">{</span>r<span class="op">*</span>delta_t_cont<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="e1b36a38-27"><a href="#e1b36a38-27" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="e1b36a38-28"><a href="#e1b36a38-28" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"Optimal sampling interval with 24-hour composite sampling:</span><span class="ch">\t</span><span class="sc">{</span>delta_t_24hr<span class="sc">:.2f}</span><span class="ss"> days"</span></span>
+<span id="e1b36a38-29"><a href="#e1b36a38-29" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="e1b36a38-30"><a href="#e1b36a38-30" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\t</span><span class="ss">r delta_t = </span><span class="sc">{</span>r<span class="op">*</span>delta_t_24hr<span class="sc">:.2f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Optimal sampling interval with grab sampling:       5.98 days
+    r delta_t = 0.59
+Optimal sampling interval with continuous sampling: 2.66 days
+    r delta_t = 0.26
+Optimal sampling interval with 24-hour composite sampling:  5.89 days
+    r delta_t = 0.58</code></pre>
+</div>
+</div>
+<p>We should check that <span class="math inline">\(r \delta_t\)</span> is small enough that our approximation for <span class="math inline">\(f(x)\)</span> is accurate:</p>
+<div id="27b8212d" class="cell" data-execution_count="3">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="27b8212d"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="27b8212d-1"><a href="#27b8212d-1" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> np.arange(<span class="fl">0.01</span>, <span class="dv">3</span>, <span class="fl">0.01</span>)</span>
+<span id="27b8212d-2"><a href="#27b8212d-2" aria-hidden="true" tabindex="-1"></a>plt.plot(x, np.exp(<span class="op">-</span>x) <span class="op">*</span> ((np.exp(x) <span class="op">-</span> <span class="dv">1</span>) <span class="op">/</span> x) <span class="op">**</span> <span class="dv">2</span>, label<span class="op">=</span><span class="st">"exact"</span>)</span>
+<span id="27b8212d-3"><a href="#27b8212d-3" aria-hidden="true" tabindex="-1"></a>plt.plot(x, <span class="dv">1</span> <span class="op">+</span> x<span class="op">**</span><span class="dv">2</span> <span class="op">/</span> <span class="dv">12</span>, label<span class="op">=</span><span class="st">"approx"</span>)</span>
+<span id="27b8212d-4"><a href="#27b8212d-4" aria-hidden="true" tabindex="-1"></a>plt.ylim([<span class="dv">0</span>, <span class="dv">2</span>])</span>
+<span id="27b8212d-5"><a href="#27b8212d-5" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
+<span id="27b8212d-6"><a href="#27b8212d-6" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"$x$"</span>)</span>
+<span id="27b8212d-7"><a href="#27b8212d-7" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"$f(x)$"</span>)</span>
+<span id="27b8212d-8"><a href="#27b8212d-8" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Grab/24hr-composite sampling"</span>)</span>
+<span id="27b8212d-9"><a href="#27b8212d-9" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="27b8212d-10"><a href="#27b8212d-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="27b8212d-11"><a href="#27b8212d-11" aria-hidden="true" tabindex="-1"></a>plt.plot(x, (np.exp(x) <span class="op">-</span> <span class="dv">1</span>) <span class="op">/</span> x, label<span class="op">=</span><span class="st">"exact"</span>)</span>
+<span id="27b8212d-12"><a href="#27b8212d-12" aria-hidden="true" tabindex="-1"></a>plt.plot(x, <span class="dv">1</span> <span class="op">+</span> x <span class="op">/</span> <span class="dv">2</span>, label<span class="op">=</span><span class="st">"approx"</span>)</span>
+<span id="27b8212d-13"><a href="#27b8212d-13" aria-hidden="true" tabindex="-1"></a>plt.ylim([<span class="dv">0</span>, <span class="dv">5</span>])</span>
+<span id="27b8212d-14"><a href="#27b8212d-14" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
+<span id="27b8212d-15"><a href="#27b8212d-15" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"$x$"</span>)</span>
+<span id="27b8212d-16"><a href="#27b8212d-16" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"$f(x)$"</span>)</span>
+<span id="27b8212d-17"><a href="#27b8212d-17" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Continuous sampling"</span>)</span>
+<span id="27b8212d-18"><a href="#27b8212d-18" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-4-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-4-output-2.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Looks fine in both cases.</p>
+</section>
+<section id="cost-sensitivity-to-delta-t" class="level3">
+<h3 class="anchored" data-anchor-id="cost-sensitivity-to-delta-t">Cost sensitivity to <span class="math inline">\(\delta t\)</span></h3>
+<p>In a real system, we won’t be able to optimize <span class="math inline">\(\delta t\)</span> exactly. Let’s see how the cost varies with the sampling interval (using the exact <span class="math inline">\(f\)</span>):</p>
+<div id="c53be080" class="cell" data-execution_count="4">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="c53be080"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="c53be080-1"><a href="#c53be080-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> depth_required(</span>
+<span id="c53be080-2"><a href="#c53be080-2" aria-hidden="true" tabindex="-1"></a>    growth_rate: <span class="bu">float</span>,</span>
+<span id="c53be080-3"><a href="#c53be080-3" aria-hidden="true" tabindex="-1"></a>    recovery_rate: <span class="bu">float</span>,</span>
+<span id="c53be080-4"><a href="#c53be080-4" aria-hidden="true" tabindex="-1"></a>    read_threshold: <span class="bu">int</span>,</span>
+<span id="c53be080-5"><a href="#c53be080-5" aria-hidden="true" tabindex="-1"></a>    p2ra_factor: <span class="bu">float</span>,</span>
+<span id="c53be080-6"><a href="#c53be080-6" aria-hidden="true" tabindex="-1"></a>    cumulative_incidence_target: <span class="bu">float</span>,</span>
+<span id="c53be080-7"><a href="#c53be080-7" aria-hidden="true" tabindex="-1"></a>    sampling_interval: <span class="bu">float</span>,</span>
+<span id="c53be080-8"><a href="#c53be080-8" aria-hidden="true" tabindex="-1"></a>    sampling_scheme: <span class="bu">str</span>,</span>
+<span id="c53be080-9"><a href="#c53be080-9" aria-hidden="true" tabindex="-1"></a>    delay: <span class="bu">float</span>,</span>
+<span id="c53be080-10"><a href="#c53be080-10" aria-hidden="true" tabindex="-1"></a>    composite_window: Optional[<span class="bu">float</span>] <span class="op">=</span> <span class="va">None</span>,</span>
+<span id="c53be080-11"><a href="#c53be080-11" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="c53be080-12"><a href="#c53be080-12" aria-hidden="true" tabindex="-1"></a>    leading_term <span class="op">=</span> (</span>
+<span id="c53be080-13"><a href="#c53be080-13" aria-hidden="true" tabindex="-1"></a>        (growth_rate <span class="op">+</span> recovery_rate)</span>
+<span id="c53be080-14"><a href="#c53be080-14" aria-hidden="true" tabindex="-1"></a>        <span class="op">*</span> read_threshold</span>
+<span id="c53be080-15"><a href="#c53be080-15" aria-hidden="true" tabindex="-1"></a>        <span class="op">/</span> (p2ra_factor <span class="op">*</span> cumulative_incidence_target)</span>
+<span id="c53be080-16"><a href="#c53be080-16" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="c53be080-17"><a href="#c53be080-17" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> growth_rate <span class="op">*</span> sampling_interval</span>
+<span id="c53be080-18"><a href="#c53be080-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> sampling_scheme <span class="op">==</span> <span class="st">"continuous"</span>:</span>
+<span id="c53be080-19"><a href="#c53be080-19" aria-hidden="true" tabindex="-1"></a>        sampling_term <span class="op">=</span> (np.exp(x) <span class="op">-</span> <span class="dv">1</span>) <span class="op">/</span> x</span>
+<span id="c53be080-20"><a href="#c53be080-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> sampling_scheme <span class="op">==</span> <span class="st">"grab"</span>:</span>
+<span id="c53be080-21"><a href="#c53be080-21" aria-hidden="true" tabindex="-1"></a>        sampling_term <span class="op">=</span> np.exp(<span class="op">-</span>x) <span class="op">*</span> ((np.exp(x) <span class="op">-</span> <span class="dv">1</span>) <span class="op">/</span> x) <span class="op">**</span> <span class="dv">2</span></span>
+<span id="c53be080-22"><a href="#c53be080-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">elif</span> sampling_scheme <span class="op">==</span> <span class="st">"composite"</span>:</span>
+<span id="c53be080-23"><a href="#c53be080-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> composite_window:</span>
+<span id="c53be080-24"><a href="#c53be080-24" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"For composite sampling, must provide a composite_window"</span>)</span>
+<span id="c53be080-25"><a href="#c53be080-25" aria-hidden="true" tabindex="-1"></a>        rw <span class="op">=</span> growth_rate <span class="op">*</span> composite_window</span>
+<span id="c53be080-26"><a href="#c53be080-26" aria-hidden="true" tabindex="-1"></a>        sampling_term <span class="op">=</span> (</span>
+<span id="c53be080-27"><a href="#c53be080-27" aria-hidden="true" tabindex="-1"></a>            (rw <span class="op">/</span> (<span class="dv">1</span> <span class="op">-</span> np.exp(<span class="op">-</span>rw))) <span class="op">*</span> np.exp(<span class="op">-</span>x) <span class="op">*</span> ((np.exp(x) <span class="op">-</span> <span class="dv">1</span>) <span class="op">/</span> x) <span class="op">**</span> <span class="dv">2</span></span>
+<span id="c53be080-28"><a href="#c53be080-28" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="c53be080-29"><a href="#c53be080-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="c53be080-30"><a href="#c53be080-30" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"sampling_scheme must be continuous, grab, or composite"</span>)</span>
+<span id="c53be080-31"><a href="#c53be080-31" aria-hidden="true" tabindex="-1"></a>    delay_term <span class="op">=</span> np.exp(growth_rate <span class="op">*</span> delay)</span>
+<span id="c53be080-32"><a href="#c53be080-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> leading_term <span class="op">*</span> sampling_term <span class="op">*</span> delay_term</span>
+<span id="c53be080-33"><a href="#c53be080-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="c53be080-34"><a href="#c53be080-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="c53be080-35"><a href="#c53be080-35" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> cost_per_time(</span>
+<span id="c53be080-36"><a href="#c53be080-36" aria-hidden="true" tabindex="-1"></a>    per_sample_cost: <span class="bu">float</span>,</span>
+<span id="c53be080-37"><a href="#c53be080-37" aria-hidden="true" tabindex="-1"></a>    per_read_cost: <span class="bu">float</span>,</span>
+<span id="c53be080-38"><a href="#c53be080-38" aria-hidden="true" tabindex="-1"></a>    sampling_interval: <span class="bu">float</span>,</span>
+<span id="c53be080-39"><a href="#c53be080-39" aria-hidden="true" tabindex="-1"></a>    sample_depth_per_time: <span class="bu">float</span>,</span>
+<span id="c53be080-40"><a href="#c53be080-40" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="c53be080-41"><a href="#c53be080-41" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> sample_cost_per_time(per_sample_cost, sampling_interval) <span class="op">+</span> seq_cost_per_time(</span>
+<span id="c53be080-42"><a href="#c53be080-42" aria-hidden="true" tabindex="-1"></a>        per_read_cost, sample_depth_per_time</span>
+<span id="c53be080-43"><a href="#c53be080-43" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="c53be080-44"><a href="#c53be080-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="c53be080-45"><a href="#c53be080-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="c53be080-46"><a href="#c53be080-46" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sample_cost_per_time(per_sample_cost, sampling_interval):</span>
+<span id="c53be080-47"><a href="#c53be080-47" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> per_sample_cost <span class="op">/</span> sampling_interval</span>
+<span id="c53be080-48"><a href="#c53be080-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="c53be080-49"><a href="#c53be080-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="c53be080-50"><a href="#c53be080-50" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> seq_cost_per_time(per_read_cost, sample_depth_per_time):</span>
+<span id="c53be080-51"><a href="#c53be080-51" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> per_read_cost <span class="op">*</span> sample_depth_per_time</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div id="f5ea11ba" class="cell" data-execution_count="5">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="f5ea11ba"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="f5ea11ba-1"><a href="#f5ea11ba-1" aria-hidden="true" tabindex="-1"></a>delta_t <span class="op">=</span> np.arange(<span class="fl">1.0</span>, <span class="dv">21</span>, <span class="dv">1</span>)</span>
+<span id="f5ea11ba-2"><a href="#f5ea11ba-2" aria-hidden="true" tabindex="-1"></a>n_cont <span class="op">=</span> depth_required(r, beta, k_hat, b, c_hat, delta_t, <span class="st">"continuous"</span>, t_d)</span>
+<span id="f5ea11ba-3"><a href="#f5ea11ba-3" aria-hidden="true" tabindex="-1"></a>n_grab <span class="op">=</span> depth_required(r, beta, k_hat, b, c_hat, delta_t, <span class="st">"grab"</span>, t_d)</span>
+<span id="f5ea11ba-4"><a href="#f5ea11ba-4" aria-hidden="true" tabindex="-1"></a>n_24hr <span class="op">=</span> depth_required(</span>
+<span id="f5ea11ba-5"><a href="#f5ea11ba-5" aria-hidden="true" tabindex="-1"></a>    r, beta, k_hat, b, c_hat, delta_t, <span class="st">"composite"</span>, t_d, composite_window<span class="op">=</span><span class="fl">1.0</span></span>
+<span id="f5ea11ba-6"><a href="#f5ea11ba-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="f5ea11ba-7"><a href="#f5ea11ba-7" aria-hidden="true" tabindex="-1"></a>cost_cont <span class="op">=</span> cost_per_time(d_s, d_r, delta_t, n_cont)</span>
+<span id="f5ea11ba-8"><a href="#f5ea11ba-8" aria-hidden="true" tabindex="-1"></a>cost_grab <span class="op">=</span> cost_per_time(d_s, d_r, delta_t, n_grab)</span>
+<span id="f5ea11ba-9"><a href="#f5ea11ba-9" aria-hidden="true" tabindex="-1"></a>cost_24hr <span class="op">=</span> cost_per_time(d_s, d_r, delta_t, n_24hr)</span>
+<span id="f5ea11ba-10"><a href="#f5ea11ba-10" aria-hidden="true" tabindex="-1"></a>plt.plot(delta_t, cost_cont, label<span class="op">=</span><span class="st">"continuous"</span>)</span>
+<span id="f5ea11ba-11"><a href="#f5ea11ba-11" aria-hidden="true" tabindex="-1"></a>plt.plot(delta_t, cost_grab, label<span class="op">=</span><span class="st">"grab"</span>)</span>
+<span id="f5ea11ba-12"><a href="#f5ea11ba-12" aria-hidden="true" tabindex="-1"></a>plt.plot(delta_t, cost_24hr, label<span class="op">=</span><span class="st">"24hr composite"</span>)</span>
+<span id="f5ea11ba-13"><a href="#f5ea11ba-13" aria-hidden="true" tabindex="-1"></a>plt.ylim([<span class="dv">0</span>, <span class="dv">5000</span>])</span>
+<span id="f5ea11ba-14"><a href="#f5ea11ba-14" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Cost per day"</span>)</span>
+<span id="f5ea11ba-15"><a href="#f5ea11ba-15" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="vs">r"Sampling interval $\delta t$"</span>)</span>
+<span id="f5ea11ba-16"><a href="#f5ea11ba-16" aria-hidden="true" tabindex="-1"></a>plt.legend()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-6-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>First, note that the cost of 24hr composite sampling is quite close to grab sampling, and that when the sampling interval is 1 day, it is exactly the same as continuous sampling.</p>
+<p>It looks like the cost curve is pretty flat for the grab/24hr sampling, suggesting that we could choose a range of sampling intervals without dramatically increasing the cost. For continuous sampling, the cost increases more steeply with increasing sampling interval.</p>
+<p>Finally, let’s break the costs down between sampling and sequencing:</p>
+<div id="0c6b20a7" class="cell" data-execution_count="6">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="0c6b20a7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="0c6b20a7-1"><a href="#0c6b20a7-1" aria-hidden="true" tabindex="-1"></a>plt.plot(delta_t, cost_grab, label<span class="op">=</span><span class="st">"Total"</span>)</span>
+<span id="0c6b20a7-2"><a href="#0c6b20a7-2" aria-hidden="true" tabindex="-1"></a>plt.plot(delta_t, sample_cost_per_time(d_s, delta_t), label<span class="op">=</span><span class="st">"Sampling"</span>)</span>
+<span id="0c6b20a7-3"><a href="#0c6b20a7-3" aria-hidden="true" tabindex="-1"></a>plt.plot(delta_t, seq_cost_per_time(d_r, n_grab), label<span class="op">=</span><span class="st">"Sequencing"</span>)</span>
+<span id="0c6b20a7-4"><a href="#0c6b20a7-4" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
+<span id="0c6b20a7-5"><a href="#0c6b20a7-5" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Cost per day"</span>)</span>
+<span id="0c6b20a7-6"><a href="#0c6b20a7-6" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="vs">r"Sampling interval $\delta t$"</span>)</span>
+<span id="0c6b20a7-7"><a href="#0c6b20a7-7" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Grab sampling"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-7-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We can observe a few things:</p>
+<ul>
+<li>Sequencing costs are always quite a bit higher than sampling costs.</li>
+<li>Increasing the sampling interval from one day to about five generates a significant savings in sampling cost, any longer than that gives strongly diminishing returns. (This makes sense from the functional form <span class="math inline">\(d_s / \delta t\)</span>.)</li>
+<li>The required sequencing depth increases slowly in this range.</li>
+</ul>
+</section>
+<section id="sensitivity-of-optimal-delta-t-to-p2ra-factor" class="level3">
+<h3 class="anchored" data-anchor-id="sensitivity-of-optimal-delta-t-to-p2ra-factor">Sensitivity of optimal <span class="math inline">\(\delta t\)</span> to P2RA factor</h3>
+<p>We have a lot of uncertainty in the P2RA factor, even for a specific known virus with a fixed protocol. Let’s see how the optimal sampling interval varies with it. (We’ll only do this for grab sampling.)</p>
+<div id="4b8c3db8" class="cell" data-execution_count="7">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="4b8c3db8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="4b8c3db8-1"><a href="#4b8c3db8-1" aria-hidden="true" tabindex="-1"></a>ra_i_01 <span class="op">=</span> np.logspace(<span class="op">-</span><span class="dv">9</span>, <span class="op">-</span><span class="dv">6</span>, <span class="dv">100</span>)</span>
+<span id="4b8c3db8-2"><a href="#4b8c3db8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert from weekly incidence to prevalence and per 1% to per 1</span></span>
+<span id="4b8c3db8-3"><a href="#4b8c3db8-3" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> ra_i_01 <span class="op">*</span> <span class="dv">100</span> <span class="op">*</span> (r <span class="op">+</span> beta) <span class="op">*</span> <span class="dv">7</span></span>
+<span id="4b8c3db8-4"><a href="#4b8c3db8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="4b8c3db8-5"><a href="#4b8c3db8-5" aria-hidden="true" tabindex="-1"></a>delta_t_opt <span class="op">=</span> optimal_interval(d_s, d_r, r, beta, k_hat, b, c_hat, <span class="st">"grab"</span>, t_d)</span>
+<span id="4b8c3db8-6"><a href="#4b8c3db8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="4b8c3db8-7"><a href="#4b8c3db8-7" aria-hidden="true" tabindex="-1"></a>plt.semilogx(ra_i_01, delta_t_opt)</span>
+<span id="4b8c3db8-8"><a href="#4b8c3db8-8" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"P2RA factor, $RA_i(1\%)$"</span>)</span>
+<span id="4b8c3db8-9"><a href="#4b8c3db8-9" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Optimal sampling interval, $\delta t$"</span>)</span>
+<span id="4b8c3db8-10"><a href="#4b8c3db8-10" aria-hidden="true" tabindex="-1"></a>plt.ylim([<span class="dv">0</span>, <span class="dv">13</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>&lt;&gt;:8: SyntaxWarning: invalid escape sequence '\%'
+&lt;&gt;:9: SyntaxWarning: invalid escape sequence '\d'
+&lt;&gt;:8: SyntaxWarning: invalid escape sequence '\%'
+&lt;&gt;:9: SyntaxWarning: invalid escape sequence '\d'
+/var/folders/dv/_dgh3jnn7kn32ndcd117mg5m0000gn/T/ipykernel_8637/3336883113.py:8: SyntaxWarning: invalid escape sequence '\%'
+  plt.xlabel("P2RA factor, $RA_i(1\%)$")
+/var/folders/dv/_dgh3jnn7kn32ndcd117mg5m0000gn/T/ipykernel_8637/3336883113.py:9: SyntaxWarning: invalid escape sequence '\d'
+  plt.ylabel("Optimal sampling interval, $\delta t$")</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-8-output-2.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>As expected, the theory predicts that with higher P2RA factors, we can get away with wider sampling intervals. Also, for this range of P2RA factors, it never recommends daily sampling.</p>
+<p>However, we can also see that the cost per day depends much more strongly on the P2RA factor than on optimizing the sampling interval:</p>
+<div id="79d7ac64" class="cell" data-execution_count="8">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="79d7ac64"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="79d7ac64-1"><a href="#79d7ac64-1" aria-hidden="true" tabindex="-1"></a>delta_t <span class="op">=</span> np.arange(<span class="fl">1.0</span>, <span class="dv">21</span>, <span class="dv">1</span>)</span>
+<span id="79d7ac64-2"><a href="#79d7ac64-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ra_i_01 <span class="kw">in</span> [<span class="fl">1e-8</span>, <span class="fl">1e-7</span>, <span class="fl">1e-6</span>]:</span>
+<span id="79d7ac64-3"><a href="#79d7ac64-3" aria-hidden="true" tabindex="-1"></a>    b <span class="op">=</span> ra_i_01 <span class="op">*</span> <span class="dv">100</span> <span class="op">*</span> (r <span class="op">+</span> beta) <span class="op">*</span> <span class="dv">7</span></span>
+<span id="79d7ac64-4"><a href="#79d7ac64-4" aria-hidden="true" tabindex="-1"></a>    n <span class="op">=</span> depth_required(r, beta, k_hat, b, c_hat, delta_t, <span class="st">"grab"</span>, t_d)</span>
+<span id="79d7ac64-5"><a href="#79d7ac64-5" aria-hidden="true" tabindex="-1"></a>    cost <span class="op">=</span> cost_per_time(d_s, d_r, delta_t, n)</span>
+<span id="79d7ac64-6"><a href="#79d7ac64-6" aria-hidden="true" tabindex="-1"></a>    plt.plot(delta_t, cost, label<span class="op">=</span><span class="ss">f"</span><span class="sc">{</span>ra_i_01<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="79d7ac64-7"><a href="#79d7ac64-7" aria-hidden="true" tabindex="-1"></a>plt.yscale(<span class="st">"log"</span>)</span>
+<span id="79d7ac64-8"><a href="#79d7ac64-8" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Cost per day"</span>)</span>
+<span id="79d7ac64-9"><a href="#79d7ac64-9" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="vs">r"Sampling interval $\delta t$"</span>)</span>
+<span id="79d7ac64-10"><a href="#79d7ac64-10" aria-hidden="true" tabindex="-1"></a>plt.legend(title<span class="op">=</span><span class="vs">r"$RA_i(1\%)$"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-9-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="a-second-example-faster-growth-and-longer-delay" class="level2">
+<h2 class="anchored" data-anchor-id="a-second-example-faster-growth-and-longer-delay">A second example: Faster growth and longer delay</h2>
+<p>Let’s consider a more pessimistic scenario: doubling both the growth rate and the delay to detection.</p>
+<div id="0d19c838" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="0d19c838"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="0d19c838-1"><a href="#0d19c838-1" aria-hidden="true" tabindex="-1"></a>d_s <span class="op">=</span> <span class="dv">500</span></span>
+<span id="0d19c838-2"><a href="#0d19c838-2" aria-hidden="true" tabindex="-1"></a>d_r <span class="op">=</span> <span class="dv">5000</span> <span class="op">*</span> <span class="fl">1e-9</span></span>
+<span id="0d19c838-3"><a href="#0d19c838-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="0d19c838-4"><a href="#0d19c838-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Twice-weekly doubling</span></span>
+<span id="0d19c838-5"><a href="#0d19c838-5" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> <span class="dv">2</span> <span class="op">*</span> np.log(<span class="dv">2</span>) <span class="op">/</span> <span class="dv">7</span></span>
+<span id="0d19c838-6"><a href="#0d19c838-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Recovery in two weeks</span></span>
+<span id="0d19c838-7"><a href="#0d19c838-7" aria-hidden="true" tabindex="-1"></a>beta <span class="op">=</span> <span class="dv">1</span> <span class="op">/</span> <span class="dv">14</span></span>
+<span id="0d19c838-8"><a href="#0d19c838-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Detect when 100 cumulative reads</span></span>
+<span id="0d19c838-9"><a href="#0d19c838-9" aria-hidden="true" tabindex="-1"></a>k_hat <span class="op">=</span> <span class="dv">100</span></span>
+<span id="0d19c838-10"><a href="#0d19c838-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Median P2RA factor for SARS-CoV-2 in Rothman</span></span>
+<span id="0d19c838-11"><a href="#0d19c838-11" aria-hidden="true" tabindex="-1"></a>ra_i_01 <span class="op">=</span> <span class="fl">1e-7</span></span>
+<span id="0d19c838-12"><a href="#0d19c838-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert from weekly incidence to prevalence and per 1% to per 1</span></span>
+<span id="0d19c838-13"><a href="#0d19c838-13" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> ra_i_01 <span class="op">*</span> <span class="dv">100</span> <span class="op">*</span> (r <span class="op">+</span> beta) <span class="op">*</span> <span class="dv">7</span></span>
+<span id="0d19c838-14"><a href="#0d19c838-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Goal of detecting by 1% cumulative incidence</span></span>
+<span id="0d19c838-15"><a href="#0d19c838-15" aria-hidden="true" tabindex="-1"></a>c_hat <span class="op">=</span> <span class="fl">0.01</span></span>
+<span id="0d19c838-16"><a href="#0d19c838-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Delay from sampling to detecting of 2 weeks</span></span>
+<span id="0d19c838-17"><a href="#0d19c838-17" aria-hidden="true" tabindex="-1"></a>t_d <span class="op">=</span> <span class="fl">14.0</span></span>
+<span id="0d19c838-18"><a href="#0d19c838-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="0d19c838-19"><a href="#0d19c838-19" aria-hidden="true" tabindex="-1"></a>delta_t_grab <span class="op">=</span> optimal_interval(d_s, d_r, r, beta, k_hat, b, c_hat, <span class="st">"grab"</span>, t_d)</span>
+<span id="0d19c838-20"><a href="#0d19c838-20" aria-hidden="true" tabindex="-1"></a>delta_t_cont <span class="op">=</span> optimal_interval(d_s, d_r, r, beta, k_hat, b, c_hat, <span class="st">"continuous"</span>, t_d)</span>
+<span id="0d19c838-21"><a href="#0d19c838-21" aria-hidden="true" tabindex="-1"></a>delta_t_24hr <span class="op">=</span> optimal_interval(d_s, d_r, r, beta, k_hat, b, c_hat, <span class="st">"composite"</span>, t_d, <span class="dv">1</span>)</span>
+<span id="0d19c838-22"><a href="#0d19c838-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="0d19c838-23"><a href="#0d19c838-23" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Optimal sampling interval with grab sampling:</span><span class="ch">\t\t</span><span class="sc">{</span>delta_t_grab<span class="sc">:.2f}</span><span class="ss"> days"</span>)</span>
+<span id="0d19c838-24"><a href="#0d19c838-24" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\t</span><span class="ss">r delta_t = </span><span class="sc">{</span>r<span class="op">*</span>delta_t_grab<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="0d19c838-25"><a href="#0d19c838-25" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Optimal sampling interval with continuous sampling:</span><span class="ch">\t</span><span class="sc">{</span>delta_t_cont<span class="sc">:.2f}</span><span class="ss"> days"</span>)</span>
+<span id="0d19c838-26"><a href="#0d19c838-26" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\t</span><span class="ss">r delta_t = </span><span class="sc">{</span>r<span class="op">*</span>delta_t_cont<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="0d19c838-27"><a href="#0d19c838-27" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="0d19c838-28"><a href="#0d19c838-28" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"Optimal sampling interval with 24-hour composite sampling:</span><span class="ch">\t</span><span class="sc">{</span>delta_t_24hr<span class="sc">:.2f}</span><span class="ss"> days"</span></span>
+<span id="0d19c838-29"><a href="#0d19c838-29" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="0d19c838-30"><a href="#0d19c838-30" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\t</span><span class="ss">r delta_t = </span><span class="sc">{</span>r<span class="op">*</span>delta_t_24hr<span class="sc">:.2f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Optimal sampling interval with grab sampling:       1.88 days
+    r delta_t = 0.37
+Optimal sampling interval with continuous sampling: 0.66 days
+    r delta_t = 0.13
+Optimal sampling interval with 24-hour composite sampling:  1.82 days
+    r delta_t = 0.36</code></pre>
+</div>
+</div>
+<p>We should check that <span class="math inline">\(r \delta_t\)</span> is small enough that our approximation for <span class="math inline">\(f(x)\)</span> is accurate:</p>
+<div id="5fb5275e" class="cell" data-execution_count="10">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="5fb5275e"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="5fb5275e-1"><a href="#5fb5275e-1" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> np.arange(<span class="fl">0.01</span>, <span class="dv">3</span>, <span class="fl">0.01</span>)</span>
+<span id="5fb5275e-2"><a href="#5fb5275e-2" aria-hidden="true" tabindex="-1"></a>plt.plot(x, np.exp(<span class="op">-</span>x) <span class="op">*</span> ((np.exp(x) <span class="op">-</span> <span class="dv">1</span>) <span class="op">/</span> x) <span class="op">**</span> <span class="dv">2</span>, label<span class="op">=</span><span class="st">"exact"</span>)</span>
+<span id="5fb5275e-3"><a href="#5fb5275e-3" aria-hidden="true" tabindex="-1"></a>plt.plot(x, <span class="dv">1</span> <span class="op">+</span> x<span class="op">**</span><span class="dv">2</span> <span class="op">/</span> <span class="dv">12</span>, label<span class="op">=</span><span class="st">"approx"</span>)</span>
+<span id="5fb5275e-4"><a href="#5fb5275e-4" aria-hidden="true" tabindex="-1"></a>plt.ylim([<span class="dv">0</span>, <span class="dv">2</span>])</span>
+<span id="5fb5275e-5"><a href="#5fb5275e-5" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
+<span id="5fb5275e-6"><a href="#5fb5275e-6" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"$x$"</span>)</span>
+<span id="5fb5275e-7"><a href="#5fb5275e-7" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"$f(x)$"</span>)</span>
+<span id="5fb5275e-8"><a href="#5fb5275e-8" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Grab sampling"</span>)</span>
+<span id="5fb5275e-9"><a href="#5fb5275e-9" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="5fb5275e-10"><a href="#5fb5275e-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="5fb5275e-11"><a href="#5fb5275e-11" aria-hidden="true" tabindex="-1"></a>plt.plot(x, (np.exp(x) <span class="op">-</span> <span class="dv">1</span>) <span class="op">/</span> x, label<span class="op">=</span><span class="st">"exact"</span>)</span>
+<span id="5fb5275e-12"><a href="#5fb5275e-12" aria-hidden="true" tabindex="-1"></a>plt.plot(x, <span class="dv">1</span> <span class="op">+</span> x <span class="op">/</span> <span class="dv">2</span>, label<span class="op">=</span><span class="st">"approx"</span>)</span>
+<span id="5fb5275e-13"><a href="#5fb5275e-13" aria-hidden="true" tabindex="-1"></a>plt.ylim([<span class="dv">0</span>, <span class="dv">5</span>])</span>
+<span id="5fb5275e-14"><a href="#5fb5275e-14" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
+<span id="5fb5275e-15"><a href="#5fb5275e-15" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"$x$"</span>)</span>
+<span id="5fb5275e-16"><a href="#5fb5275e-16" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"$f(x)$"</span>)</span>
+<span id="5fb5275e-17"><a href="#5fb5275e-17" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Continuous sampling"</span>)</span>
+<span id="5fb5275e-18"><a href="#5fb5275e-18" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-11-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-11-output-2.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Looks fine in both cases.</p>
+<section id="cost-sensitivity-to-delta-t-1" class="level3">
+<h3 class="anchored" data-anchor-id="cost-sensitivity-to-delta-t-1">Cost sensitivity to <span class="math inline">\(\delta t\)</span></h3>
+<p>In a real system, we won’t be able to optimize <span class="math inline">\(\delta t\)</span> exactly. Let’s see how the cost varies with the sampling interval:</p>
+<div id="4a537bb3" class="cell" data-execution_count="11">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="4a537bb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="4a537bb3-1"><a href="#4a537bb3-1" aria-hidden="true" tabindex="-1"></a>delta_t <span class="op">=</span> np.arange(<span class="fl">1.0</span>, <span class="dv">21</span>, <span class="dv">1</span>)</span>
+<span id="4a537bb3-2"><a href="#4a537bb3-2" aria-hidden="true" tabindex="-1"></a>n_cont <span class="op">=</span> depth_required(r, beta, k_hat, b, c_hat, delta_t, <span class="st">"continuous"</span>, t_d)</span>
+<span id="4a537bb3-3"><a href="#4a537bb3-3" aria-hidden="true" tabindex="-1"></a>n_grab <span class="op">=</span> depth_required(r, beta, k_hat, b, c_hat, delta_t, <span class="st">"grab"</span>, t_d)</span>
+<span id="4a537bb3-4"><a href="#4a537bb3-4" aria-hidden="true" tabindex="-1"></a>n_24hr <span class="op">=</span> depth_required(</span>
+<span id="4a537bb3-5"><a href="#4a537bb3-5" aria-hidden="true" tabindex="-1"></a>    r, beta, k_hat, b, c_hat, delta_t, <span class="st">"composite"</span>, t_d, composite_window<span class="op">=</span><span class="fl">1.0</span></span>
+<span id="4a537bb3-6"><a href="#4a537bb3-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="4a537bb3-7"><a href="#4a537bb3-7" aria-hidden="true" tabindex="-1"></a>cost_cont <span class="op">=</span> cost_per_time(d_s, d_r, delta_t, n_cont)</span>
+<span id="4a537bb3-8"><a href="#4a537bb3-8" aria-hidden="true" tabindex="-1"></a>cost_grab <span class="op">=</span> cost_per_time(d_s, d_r, delta_t, n_grab)</span>
+<span id="4a537bb3-9"><a href="#4a537bb3-9" aria-hidden="true" tabindex="-1"></a>cost_24hr <span class="op">=</span> cost_per_time(d_s, d_r, delta_t, n_24hr)</span>
+<span id="4a537bb3-10"><a href="#4a537bb3-10" aria-hidden="true" tabindex="-1"></a>plt.plot(delta_t, cost_cont, label<span class="op">=</span><span class="st">"continuous"</span>)</span>
+<span id="4a537bb3-11"><a href="#4a537bb3-11" aria-hidden="true" tabindex="-1"></a>plt.plot(delta_t, cost_grab, label<span class="op">=</span><span class="st">"grab"</span>)</span>
+<span id="4a537bb3-12"><a href="#4a537bb3-12" aria-hidden="true" tabindex="-1"></a>plt.plot(delta_t, cost_24hr, label<span class="op">=</span><span class="st">"24hr composite"</span>)</span>
+<span id="4a537bb3-13"><a href="#4a537bb3-13" aria-hidden="true" tabindex="-1"></a>plt.ylim([<span class="dv">0</span>, <span class="dv">100000</span>])</span>
+<span id="4a537bb3-14"><a href="#4a537bb3-14" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Cost per day"</span>)</span>
+<span id="4a537bb3-15"><a href="#4a537bb3-15" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="vs">r"Sampling interval $\delta t$"</span>)</span>
+<span id="4a537bb3-16"><a href="#4a537bb3-16" aria-hidden="true" tabindex="-1"></a>plt.legend()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-12-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>It looks like the cost curve is pretty flat for the grab sampling, suggesting that we could choose a range of sampling intervals without dramatically increasing the cost. For continuous sampling, the cost increases more steeply with increasing sampling interval.</p>
+<p>Finally, let’s break the costs down between sampling and sequencing:</p>
+<div id="d2e4f12f" class="cell" data-execution_count="12">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="d2e4f12f"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="d2e4f12f-1"><a href="#d2e4f12f-1" aria-hidden="true" tabindex="-1"></a>plt.plot(delta_t, cost_grab, label<span class="op">=</span><span class="st">"Total"</span>)</span>
+<span id="d2e4f12f-2"><a href="#d2e4f12f-2" aria-hidden="true" tabindex="-1"></a>plt.plot(delta_t, sample_cost_per_time(d_s, delta_t), label<span class="op">=</span><span class="st">"Sampling"</span>)</span>
+<span id="d2e4f12f-3"><a href="#d2e4f12f-3" aria-hidden="true" tabindex="-1"></a>plt.plot(delta_t, seq_cost_per_time(d_r, n_grab), label<span class="op">=</span><span class="st">"Sequencing"</span>)</span>
+<span id="d2e4f12f-4"><a href="#d2e4f12f-4" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
+<span id="d2e4f12f-5"><a href="#d2e4f12f-5" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Cost per day"</span>)</span>
+<span id="d2e4f12f-6"><a href="#d2e4f12f-6" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="vs">r"Sampling interval $\delta t$"</span>)</span>
+<span id="d2e4f12f-7"><a href="#d2e4f12f-7" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Grab sampling"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-13-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>In this faster growth + more delay example, sequencing costs completely dwarf sampling costs.</p>
+</section>
+<section id="sensitivity-of-optimal-delta-t-to-p2ra-factor-1" class="level3">
+<h3 class="anchored" data-anchor-id="sensitivity-of-optimal-delta-t-to-p2ra-factor-1">Sensitivity of optimal <span class="math inline">\(\delta t\)</span> to P2RA factor</h3>
+<div id="04fc9a66" class="cell" data-execution_count="13">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="04fc9a66"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="04fc9a66-1"><a href="#04fc9a66-1" aria-hidden="true" tabindex="-1"></a>ra_i_01 <span class="op">=</span> np.logspace(<span class="op">-</span><span class="dv">9</span>, <span class="op">-</span><span class="dv">6</span>, <span class="dv">100</span>)</span>
+<span id="04fc9a66-2"><a href="#04fc9a66-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert from weekly incidence to prevalence and per 1% to per 1</span></span>
+<span id="04fc9a66-3"><a href="#04fc9a66-3" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> ra_i_01 <span class="op">*</span> <span class="dv">100</span> <span class="op">*</span> (r <span class="op">+</span> beta) <span class="op">*</span> <span class="dv">7</span></span>
+<span id="04fc9a66-4"><a href="#04fc9a66-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="04fc9a66-5"><a href="#04fc9a66-5" aria-hidden="true" tabindex="-1"></a>delta_t_opt <span class="op">=</span> optimal_interval(d_s, d_r, r, beta, k_hat, b, c_hat, <span class="st">"grab"</span>, t_d)</span>
+<span id="04fc9a66-6"><a href="#04fc9a66-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="04fc9a66-7"><a href="#04fc9a66-7" aria-hidden="true" tabindex="-1"></a>plt.semilogx(ra_i_01, delta_t_opt)</span>
+<span id="04fc9a66-8"><a href="#04fc9a66-8" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"P2RA factor, $RA_i(1\%)$"</span>)</span>
+<span id="04fc9a66-9"><a href="#04fc9a66-9" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Optimal sampling interval, $\delta t$"</span>)</span>
+<span id="04fc9a66-10"><a href="#04fc9a66-10" aria-hidden="true" tabindex="-1"></a>plt.ylim([<span class="dv">0</span>, <span class="dv">5</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>&lt;&gt;:8: SyntaxWarning: invalid escape sequence '\%'
+&lt;&gt;:9: SyntaxWarning: invalid escape sequence '\d'
+&lt;&gt;:8: SyntaxWarning: invalid escape sequence '\%'
+&lt;&gt;:9: SyntaxWarning: invalid escape sequence '\d'
+/var/folders/dv/_dgh3jnn7kn32ndcd117mg5m0000gn/T/ipykernel_8637/223304510.py:8: SyntaxWarning: invalid escape sequence '\%'
+  plt.xlabel("P2RA factor, $RA_i(1\%)$")
+/var/folders/dv/_dgh3jnn7kn32ndcd117mg5m0000gn/T/ipykernel_8637/223304510.py:9: SyntaxWarning: invalid escape sequence '\d'
+  plt.ylabel("Optimal sampling interval, $\delta t$")</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-14-output-2.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>In this case, daily sampling is sometimes favored when the P2RA factor is small enough.</p>
+<p>However, we can also see that the cost per day depends much more strongly on the P2RA factor than on optimizing the sampling interval:</p>
+<div id="005b6e21" class="cell" data-execution_count="14">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="005b6e21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="005b6e21-1"><a href="#005b6e21-1" aria-hidden="true" tabindex="-1"></a>delta_t <span class="op">=</span> np.arange(<span class="fl">1.0</span>, <span class="dv">21</span>, <span class="dv">1</span>)</span>
+<span id="005b6e21-2"><a href="#005b6e21-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ra_i_01 <span class="kw">in</span> [<span class="fl">1e-8</span>, <span class="fl">1e-7</span>, <span class="fl">1e-6</span>]:</span>
+<span id="005b6e21-3"><a href="#005b6e21-3" aria-hidden="true" tabindex="-1"></a>    b <span class="op">=</span> ra_i_01 <span class="op">*</span> <span class="dv">100</span> <span class="op">*</span> (r <span class="op">+</span> beta) <span class="op">*</span> <span class="dv">7</span></span>
+<span id="005b6e21-4"><a href="#005b6e21-4" aria-hidden="true" tabindex="-1"></a>    n <span class="op">=</span> depth_required(r, beta, k_hat, b, c_hat, delta_t, <span class="st">"grab"</span>, t_d)</span>
+<span id="005b6e21-5"><a href="#005b6e21-5" aria-hidden="true" tabindex="-1"></a>    cost <span class="op">=</span> cost_per_time(d_s, d_r, delta_t, n)</span>
+<span id="005b6e21-6"><a href="#005b6e21-6" aria-hidden="true" tabindex="-1"></a>    plt.plot(delta_t, cost, label<span class="op">=</span><span class="ss">f"</span><span class="sc">{</span>ra_i_01<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="005b6e21-7"><a href="#005b6e21-7" aria-hidden="true" tabindex="-1"></a>plt.yscale(<span class="st">"log"</span>)</span>
+<span id="005b6e21-8"><a href="#005b6e21-8" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Cost per day"</span>)</span>
+<span id="005b6e21-9"><a href="#005b6e21-9" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="vs">r"Sampling interval $\delta t$"</span>)</span>
+<span id="005b6e21-10"><a href="#005b6e21-10" aria-hidden="true" tabindex="-1"></a>plt.legend(title<span class="op">=</span><span class="vs">r"$RA_i(1\%)$"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-15-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="cost-sensitivity-to-the-latency-t_d" class="level2">
+<h2 class="anchored" data-anchor-id="cost-sensitivity-to-the-latency-t_d">Cost sensitivity to the latency, <span class="math inline">\(t_d\)</span></h2>
+<p>As a final application, let’s calculate what the optimal cost would be as a function of delay/latency time <span class="math inline">\(t_d\)</span>. We’ll use 24-hr composite sampling. And for some realism, we’ll round the optimal sampling interval to the nearest day.</p>
+<div id="127df79a" class="cell" data-execution_count="15">
+<div class="sourceCode cell-code" id="127df79a"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="127df79a-1"><a href="#127df79a-1" aria-hidden="true" tabindex="-1"></a>d_s <span class="op">=</span> <span class="dv">500</span></span>
+<span id="127df79a-2"><a href="#127df79a-2" aria-hidden="true" tabindex="-1"></a>d_r <span class="op">=</span> <span class="dv">5000</span> <span class="op">*</span> <span class="fl">1e-9</span></span>
+<span id="127df79a-3"><a href="#127df79a-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="127df79a-4"><a href="#127df79a-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Bi-weekly doubling</span></span>
+<span id="127df79a-5"><a href="#127df79a-5" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> <span class="dv">2</span> <span class="op">*</span> np.log(<span class="dv">2</span>) <span class="op">/</span> <span class="dv">7</span></span>
+<span id="127df79a-6"><a href="#127df79a-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Recovery in two weeks</span></span>
+<span id="127df79a-7"><a href="#127df79a-7" aria-hidden="true" tabindex="-1"></a>beta <span class="op">=</span> <span class="dv">1</span> <span class="op">/</span> <span class="dv">14</span></span>
+<span id="127df79a-8"><a href="#127df79a-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Detect when 100 cumulative reads</span></span>
+<span id="127df79a-9"><a href="#127df79a-9" aria-hidden="true" tabindex="-1"></a>k_hat <span class="op">=</span> <span class="dv">100</span></span>
+<span id="127df79a-10"><a href="#127df79a-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Median P2RA factor for SARS-CoV-2 in Rothman</span></span>
+<span id="127df79a-11"><a href="#127df79a-11" aria-hidden="true" tabindex="-1"></a>ra_i_01 <span class="op">=</span> <span class="fl">1e-7</span></span>
+<span id="127df79a-12"><a href="#127df79a-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert from weekly incidence to prevalence and per 1% to per 1</span></span>
+<span id="127df79a-13"><a href="#127df79a-13" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> ra_i_01 <span class="op">*</span> <span class="dv">100</span> <span class="op">*</span> (r <span class="op">+</span> beta) <span class="op">*</span> <span class="dv">7</span></span>
+<span id="127df79a-14"><a href="#127df79a-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Goal of detecting by 1% cumulative incidence</span></span>
+<span id="127df79a-15"><a href="#127df79a-15" aria-hidden="true" tabindex="-1"></a>c_hat <span class="op">=</span> <span class="fl">0.01</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="fa72f171" class="cell" data-execution_count="16">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="fa72f171"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="fa72f171-1"><a href="#fa72f171-1" aria-hidden="true" tabindex="-1"></a>t_d <span class="op">=</span> np.arange(<span class="fl">1.0</span>, <span class="fl">22.0</span>, <span class="fl">1.0</span>)</span>
+<span id="fa72f171-2"><a href="#fa72f171-2" aria-hidden="true" tabindex="-1"></a>delta_t_opt <span class="op">=</span> optimal_interval(</span>
+<span id="fa72f171-3"><a href="#fa72f171-3" aria-hidden="true" tabindex="-1"></a>    d_s, d_r, r, beta, k_hat, b, c_hat, <span class="st">"composite"</span>, t_d, <span class="fl">1.0</span></span>
+<span id="fa72f171-4"><a href="#fa72f171-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="fa72f171-5"><a href="#fa72f171-5" aria-hidden="true" tabindex="-1"></a>delta_t_round <span class="op">=</span> np.<span class="bu">round</span>(delta_t_opt)</span>
+<span id="fa72f171-6"><a href="#fa72f171-6" aria-hidden="true" tabindex="-1"></a>n <span class="op">=</span> depth_required(r, beta, k_hat, b, c_hat, delta_t_round, <span class="st">"composite"</span>, t_d, <span class="fl">1.0</span>)</span>
+<span id="fa72f171-7"><a href="#fa72f171-7" aria-hidden="true" tabindex="-1"></a>cost <span class="op">=</span> cost_per_time(d_s, d_r, delta_t_round, n)</span>
+<span id="fa72f171-8"><a href="#fa72f171-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="fa72f171-9"><a href="#fa72f171-9" aria-hidden="true" tabindex="-1"></a>plt.plot(t_d, delta_t_round, <span class="st">"o"</span>)</span>
+<span id="fa72f171-10"><a href="#fa72f171-10" aria-hidden="true" tabindex="-1"></a>plt.ylim([<span class="dv">0</span>, <span class="dv">5</span>])</span>
+<span id="fa72f171-11"><a href="#fa72f171-11" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="vs">r"Latency $t_d$ (days)"</span>)</span>
+<span id="fa72f171-12"><a href="#fa72f171-12" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="vs">r"Optimal sampling interval $\delta t$ (days)"</span>)</span>
+<span id="fa72f171-13"><a href="#fa72f171-13" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-17-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Shorter latency means that we can sample less often.</p>
+<div id="c5db26c3" class="cell" data-execution_count="17">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="c5db26c3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="c5db26c3-1"><a href="#c5db26c3-1" aria-hidden="true" tabindex="-1"></a>plt.plot(t_d, n, <span class="st">"o"</span>)</span>
+<span id="c5db26c3-2"><a href="#c5db26c3-2" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="vs">r"Latency $t_d$ (days)"</span>)</span>
+<span id="c5db26c3-3"><a href="#c5db26c3-3" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Depth per day (reads)"</span>)</span>
+<span id="c5db26c3-4"><a href="#c5db26c3-4" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-18-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Longer latency means that we have to sequence exponentially more reads per day. This leads to exponentially higher costs:</p>
+<div id="501b2535" class="cell" data-execution_count="18">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="501b2535"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="501b2535-1"><a href="#501b2535-1" aria-hidden="true" tabindex="-1"></a>plt.plot(t_d, cost, <span class="st">"o"</span>)</span>
+<span id="501b2535-2"><a href="#501b2535-2" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="vs">r"Latency $t_d$ (days)"</span>)</span>
+<span id="501b2535-3"><a href="#501b2535-3" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Cost per day (dollars)"</span>)</span>
+<span id="501b2535-4"><a href="#501b2535-4" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-19-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
