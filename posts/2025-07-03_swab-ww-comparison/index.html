@@ -343,7 +343,7 @@ window.Quarto = {
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># All lengths in bp</span></span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>genome_length <span class="ot">&lt;-</span> <span class="dv">7000</span></span>
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>read_length_swab <span class="ot">&lt;-</span> <span class="dv">2000</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>read_length_ww <span class="ot">&lt;-</span> <span class="dv">300</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>read_length_ww <span class="ot">&lt;-</span> <span class="dv">170</span></span>
 <span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Probability that a read covers the junction, assuming even coverage</span></span>
 <span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>pr_junction_swab <span class="ot">&lt;-</span> read_length_swab <span class="sc">/</span> genome_length</span>
@@ -442,12 +442,12 @@ window.Quarto = {
 <tr class="even">
 <td style="text-align: left;">HCoV-HKU1</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">7</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">HCoV-NL63</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">HCoV-OC43</td>
@@ -457,12 +457,12 @@ window.Quarto = {
 <tr class="odd">
 <td style="text-align: left;">Rhinovirus A</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">0</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Rhinovirus B</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Rhinovirus C</td>
@@ -525,13 +525,13 @@ ratio
 HCoV-229E
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.000703
+0.001257
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.000628
+0.000625
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-1.119
+2.013
 </td>
 </tr>
 <tr>
@@ -539,13 +539,13 @@ HCoV-229E
 HCoV-HKU1
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.004499
+0.007812
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.001385
+0.001392
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-3.249
+5.613
 </td>
 </tr>
 <tr>
@@ -553,13 +553,13 @@ HCoV-HKU1
 HCoV-NL63
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.003203
+0.005615
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.002206
+0.002084
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-1.452
+2.695
 </td>
 </tr>
 <tr>
@@ -567,13 +567,13 @@ HCoV-NL63
 HCoV-OC43
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.001110
+0.001977
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.001434
+0.001528
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.774
+1.294
 </td>
 </tr>
 <tr>
@@ -581,13 +581,13 @@ HCoV-OC43
 Rhinovirus A
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.004124
+0.007329
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.003858
+0.003697
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-1.069
+1.982
 </td>
 </tr>
 <tr>
@@ -595,13 +595,13 @@ Rhinovirus A
 Rhinovirus B
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.005589
+0.009620
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.001704
+0.001561
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-3.280
+6.162
 </td>
 </tr>
 <tr>
@@ -609,13 +609,13 @@ Rhinovirus B
 Rhinovirus C
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.000707
+0.001261
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.001296
+0.001191
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.546
+1.059
 </td>
 </tr>
 <tr>
@@ -623,13 +623,13 @@ Rhinovirus C
 SARS-CoV-2
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.000018
+0.000030
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.000872
+0.000890
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.020
+0.033
 </td>
 </tr>
 </tbody>
@@ -648,8 +648,7 @@ SARS-CoV-2
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_log10</span>() <span class="sc">+</span></span>
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>species, <span class="at">nrow =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>) <span class="sc">+</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="cn">NULL</span>)</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># labs(x = "CI at swab detection", y = "CI at wastewater detection")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="cn">NULL</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
@@ -743,13 +742,13 @@ HCoV-229E
 1.000
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.00486
+0.00857
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
 0.00333
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-1.457
+2.571
 </td>
 </tr>
 <tr>
@@ -760,13 +759,13 @@ HCoV-HKU1
 1.397
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.02939
+0.05186
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
 0.00466
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-6.309
+11.133
 </td>
 </tr>
 <tr>
@@ -777,13 +776,13 @@ HCoV-NL63
 2.100
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.02221
+0.03920
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
 0.00700
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-3.172
+5.598
 </td>
 </tr>
 <tr>
@@ -794,13 +793,13 @@ HCoV-OC43
 1.184
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.00773
+0.01364
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
 0.00395
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-1.957
+3.454
 </td>
 </tr>
 <tr>
@@ -811,13 +810,13 @@ Rhinovirus A
 5.091
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.02796
+0.04935
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
 0.01697
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-1.648
+2.908
 </td>
 </tr>
 <tr>
@@ -828,13 +827,13 @@ Rhinovirus B
 1.668
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.03677
+0.06489
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
 0.00556
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-6.614
+11.673
 </td>
 </tr>
 <tr>
@@ -845,13 +844,13 @@ Rhinovirus C
 1.174
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.00481
+0.00849
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
 0.00391
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-1.229
+2.169
 </td>
 </tr>
 <tr>
@@ -862,13 +861,13 @@ SARS-CoV-2
 1.026
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.00010
+0.00018
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
 0.00342
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.029
+0.052
 </td>
 </tr>
 </tbody>
