@@ -665,7 +665,7 @@ SARS-CoV-2
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>detection <span class="sc">%&gt;%</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">ratio =</span> ci_at_detection_ww <span class="sc">/</span> ci_at_detection_swab) <span class="sc">%&gt;%</span></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(ratio, species, <span class="at">fill =</span> group)) <span class="sc">+</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">1</span>, <span class="at">color =</span> <span class="st">"grey"</span>) <span class="sc">+</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">1</span>, <span class="at">color =</span> <span class="st">"darkgrey"</span>) <span class="sc">+</span></span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_violin</span>(<span class="at">draw_quantiles =</span> <span class="fu">c</span>(<span class="fl">0.15</span>, <span class="fl">0.5</span>, <span class="fl">0.85</span>)) <span class="sc">+</span></span>
 <span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(</span>
 <span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">transform =</span> <span class="st">"log10"</span>,</span>
@@ -678,7 +678,7 @@ SARS-CoV-2
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="index_files/figure-html/ratio-1.png" class="img-fluid figure-img" width="672"></p>
-<figcaption>Vertical bars are 15, 50, and 85th percentiles. Grey line is equal incidence.</figcaption>
+<figcaption>Vertical bars are 15, 50, and 85th percentiles. Larger values mean higher CI at wastewater detection.</figcaption>
 </figure>
 </div>
 </div>
