@@ -255,7 +255,7 @@ at detection for each virus and sample type:
 
 ```{r}
 #| label: geom-means
-#| fig-cap: Geometric mean cumulative incidence at detection
+#| fig-cap: Geometric mean cumulative incidence at detection. Ratio is wastewater CI / swab CI. Ratio < 1 favors wastewater; ratio > 1 favors swabs.
 
 geom_means <- detection %>%
   summarize(
@@ -301,17 +301,21 @@ Finally, we can plot the distribution of the ratio of CI at detection in the two
 ```{r}
 #| label: ratio
 #| fig-cap: CI at wastewater detection / CI at swab detection
-#| fig-subcap: Vertical bars are 15, 50, and 85th percentiles
+#| fig-subcap: Vertical bars are 15, 50, and 85th percentiles. Ratio < 1 favors wastewater; ratio > 1 favors swabs.
 
 detection %>%
   mutate(ratio = ci_at_detection_ww / ci_at_detection_swab) %>%
   ggplot(aes(ratio, species, fill = group)) +
+  geom_vline(xintercept = 1, color = "darkgrey") +
   geom_violin(draw_quantiles = c(0.15, 0.5, 0.85)) +
-  scale_x_continuous(transform = "log10", labels = scientific) +
+  scale_x_continuous(
+    transform = "log10",
+    labels = scientific,
+    breaks = c(1e-2, 1, 1e2)
+    ) +
   theme(legend.position = "none") +
   labs(x = NULL, y = NULL)
 ```
-
 
 # Heuristic analysis
 
