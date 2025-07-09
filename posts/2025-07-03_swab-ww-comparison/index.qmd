@@ -1,0 +1,220 @@
+---
+title: "Simulating the sensitivity of swabs and wastewater"
+draft: true
+format:
+  html:
+    code-fold: false 
+    toc: true
+execute:
+  cache: false
+knitr:
+  opts_chunk: 
+    message: false
+editor: source 
+author: Dan Rice
+date: 2025-07-03
+date-modified: today
+---
+
+# Setup
+
+```{r}
+#| label: setup
+
+library(tidyverse)
+library(knitr)
+# library(here)
+library(slider)
+library(kableExtra)
+
+set.seed(20250703)
+
+theme_set(theme_minimal())
+
+# Colors borrowed from https://github.com/JLSteenwyk/ggpubfigs
+wong_eight <- c(
+  "#E69F00",
+  "#56B4E9",
+  "#009E73",
+  "#F0E442",
+  "#0072B2",
+  "#D55E00",
+  "#CC79A7",
+  "#000000"
+)
+options(
+  ggplot2.discrete.colour = function()
+    scale_colour_manual(values = wong_eight)
+)
+options(
+  ggplot2.discrete.fill = function()
+    scale_fill_manual(values = wong_eight)
+)
+
+# For axis labels
+scientific <- function(x) {
+  parse(text = sprintf("10^{%f}", log10(x)))
+}
+
+# Geometric mean
+gm <- function(x) exp(mean(log(x)))
+
+# Load samples from posterior distributions
+posteriors <- read_tsv("https://raw.githubusercontent.com/naobservatory/swab-based-p2ra/refs/heads/main/tables/posteriors.tsv")
+```
+
+# Model
+
+```{r}
+#| label: parameters
+
+# All times in days
+doubling_time <- 4
+growth_rate <- log(2) / doubling_time
+shedding_duration <- 7
+
+# TODO: implement sampling interval. Currently implicitly daily
+# sampling_interval <- 1
+
+# All lengths in bp
+genome_length <- 7000
+read_length_swab <- 2000
+read_length_ww <- 300
+
+# Probability that a read covers the junction, assuming even coverage
+pr_junction_swab <- read_length_swab / genome_length
+pr_junction_ww <- read_length_ww / genome_length
+
+swab_pool_size <- 300
+total_reads_swab <- 2e6
+total_reads_ww <- 3e9
+
+# Number of reads to detect a junction
+detection_threshold <- 1
+```
+
+```{r}
+#| label: prevalence
+
+# Assume deterministic exponential growth starting from one case
+ditp_sewershed_population <- 2.5e6
+# Grow until ~50% of people have been infected
+max_time <- floor(log(growth_rate * ditp_sewershed_population / 2) / growth_rate)
+time <- 1:max_time
+incidence <- exp(time * growth_rate) / ditp_sewershed_population
+cumulative_incidence = cumsum(incidence)
+
+# Assume constant shedding for `shedding_duration` days
+shedding_prevalence <- slide_dbl(incidence, sum, .before = shedding_duration - 1, .complete = FALSE)
+```
+
+# Simulations
+
+```{r}
+#| label: downsample
+
+# Randomly downsample the posteriors for Rhinoviruses and Coronaviruses
+n_samples = 2000
+thinned_posteriors <- posteriors %>%
+  filter(group %in% c("Rhinoviruses", "Coronaviruses (seasonal)", "Coronaviruses (SARS-CoV-2)")) %>%
+  select(species, group, mu_swab, phi_swab, mu_ww, phi_ww) %>%
+  group_by(species, group) %>%
+  slice_sample(n = n_samples) %>%
+  mutate(rep = 1:n()) 
+```
+
+```{r}
+#| label: simulate-detection
+#| cache: true
+
+detection <- thinned_posteriors %>%
+  cross_join(tibble(day = time, p = shedding_prevalence, ci = cumulative_incidence)) %>%
+  group_by(rep, .add = TRUE) %>%
+  mutate(
+    mean_ww = p * mu_ww * total_reads_ww * pr_junction_ww,
+    reads_ww = map2_int(phi_ww, mean_ww, ~ rnbinom(1, size = .x, mu = .y)),
+    cum_reads_ww = cumsum(reads_ww),
+    # Number of swabs from infected people
+    pos_swabs = map_int(p, ~ rbinom(1, size = swab_pool_size, prob = .x)),
+    mean_swab = (pos_swabs / swab_pool_size) * mu_swab * total_reads_swab * pr_junction_swab,
+    reads_swab = map2_int(phi_swab, mean_swab, ~ rnbinom(1, size = .x, mu = .y)),
+    cum_reads_swab = cumsum(reads_swab),
+  ) %>%
+  summarize(
+    mu_ww = first(mu_ww),
+    phi_ww = first(phi_ww),
+    mu_swab = first(mu_swab),
+    phi_swab = first(phi_swab),
+    # If undetected, use 100% CI
+    ci_at_detection_ww = if_else(
+      any(cum_reads_ww > detection_threshold),
+      ci[which.max(cum_reads_ww >= detection_threshold)],
+      1.0
+    ),
+    ci_at_detection_swab = if_else(
+      any(cum_reads_swab > detection_threshold),
+      ci[which.max(cum_reads_swab >= detection_threshold)],
+      1.0
+    ),
+  )
+```
+
+# Results
+
+```{r}
+#| label: geom-means
+#| fig-cap: Geometric mean CI at detection
+
+geom_means <- detection %>%
+  summarize(
+    ci_at_detection_ww = gm(ci_at_detection_ww),
+    ci_at_detection_swab = gm(ci_at_detection_swab),
+    ratio = ci_at_detection_ww / ci_at_detection_swab,
+    .groups = "drop",
+  )
+
+geom_means %>%
+  select(- group) %>%
+  rename(
+    wastewater = ci_at_detection_ww,
+    swab = ci_at_detection_swab,
+  ) %>%
+  kable(digits = c(NA, 6, 6, 3)) %>%
+  column_spec(c(2, 3, 4), width = "3cm", monospace = TRUE) 
+```
+
+```{r}
+#| label: joint-distribution
+#| fig-cap: "Cumulative incidence at detection: wastewater vs. swab"
+#| fig-cap-location: top
+#| fig-subcap: "Black dot show geometric means. Grey line is equal incidence."
+
+detection %>%
+  ggplot(aes(ci_at_detection_swab, ci_at_detection_ww, color = group)) +
+  geom_abline(intercept = 0, slope = 1, color = "grey") +
+  geom_density_2d() +
+  geom_point(data = geom_means, color = "black") +
+  scale_x_log10() +
+  scale_y_log10() +
+  facet_wrap(~species, nrow = 2) +
+  theme(legend.position = "none") +
+  labs(x = NULL, y = NULL)
+  # labs(x = "CI at swab detection", y = "CI at wastewater detection")
+```
+
+```{r}
+#| label: ratio
+#| fig-cap: CI at wastewater detection / CI at swab detection
+#| fig-subcap: Vertical bars are 15, 50, and 85th percentiles
+
+detection %>%
+  mutate(ratio = ci_at_detection_ww / ci_at_detection_swab) %>%
+  ggplot(aes(ratio, species, fill = group)) +
+  geom_violin(draw_quantiles = c(0.15, 0.5, 0.85)) +
+  scale_x_continuous(transform = "log10", labels = scientific) +
+  theme(legend.position = "none") +
+  labs(x = NULL, y = NULL)
+```
+
+
+
