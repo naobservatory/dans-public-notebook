@@ -200,7 +200,7 @@ window.Quarto = {
       <div>
       <div class="quarto-title-meta-heading">Modified</div>
       <div class="quarto-title-meta-contents">
-        <p class="date-modified">July 8, 2025</p>
+        <p class="date-modified">July 9, 2025</p>
       </div>
     </div>
       
@@ -245,42 +245,45 @@ window.Quarto = {
 <section id="setup" class="level1">
 <h1>Setup</h1>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(slider)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(kableExtra)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20250703</span>)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_set</span>(<span class="fu">theme_minimal</span>())</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Colors borrowed from https://github.com/JLSteenwyk/ggpubfigs</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>wong_eight <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#E69F00"</span>,</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#56B4E9"</span>,</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#009E73"</span>,</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#F0E442"</span>,</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#0072B2"</span>,</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#D55E00"</span>,</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#CC79A7"</span>,</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#000000"</span></span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">ggplot2.discrete.colour =</span> <span class="cf">function</span>()</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_colour_manual</span>(<span class="at">values =</span> wong_eight)</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">ggplot2.discrete.fill =</span> <span class="cf">function</span>()</span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> wong_eight)</span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="co"># For axis labels</span></span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>scientific <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">parse</span>(<span class="at">text =</span> <span class="fu">sprintf</span>(<span class="st">"10^{%f}"</span>, <span class="fu">log10</span>(x)))</span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Geometric mean</span></span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>gm <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">exp</span>(<span class="fu">mean</span>(<span class="fu">log</span>(x)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tibble)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(slider)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(kableExtra)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20250703</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_set</span>(<span class="fu">theme_minimal</span>())</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Colors borrowed from https://github.com/JLSteenwyk/ggpubfigs</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>wong_eight <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#E69F00"</span>,</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#56B4E9"</span>,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#009E73"</span>,</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#F0E442"</span>,</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#0072B2"</span>,</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#D55E00"</span>,</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#CC79A7"</span>,</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  <span class="st">"#000000"</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">ggplot2.discrete.colour =</span> <span class="cf">function</span>()</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_colour_manual</span>(<span class="at">values =</span> wong_eight)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">ggplot2.discrete.fill =</span> <span class="cf">function</span>()</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> wong_eight)</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="co"># For axis labels</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>scientific <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">parse</span>(<span class="at">text =</span> <span class="fu">sprintf</span>(<span class="st">"10^{%f}"</span>, <span class="fu">log10</span>(x)))</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Geometric mean</span></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>gm <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">exp</span>(<span class="fu">mean</span>(<span class="fu">log</span>(x)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="model" class="level1">
@@ -299,7 +302,7 @@ window.Quarto = {
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>max_day <span class="ot">&lt;-</span> <span class="fu">floor</span>(<span class="fu">log</span>(growth_rate <span class="sc">*</span> population_size <span class="sc">/</span> <span class="dv">2</span>) <span class="sc">/</span> growth_rate)</span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>epi_model <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">day =</span> <span class="dv">1</span><span class="sc">:</span>max_day,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">day =</span> <span class="dv">0</span><span class="sc">:</span>max_day,</span>
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Exponential growth from a single case</span></span>
 <span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">incidence =</span> <span class="fu">exp</span>(day <span class="sc">*</span> growth_rate) <span class="sc">/</span> population_size,</span>
 <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">cumulative_incidence =</span> <span class="fu">cumsum</span>(incidence),</span>
@@ -363,14 +366,17 @@ window.Quarto = {
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>n_samples <span class="ot">=</span> <span class="dv">2000</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>posteriors <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="st">"https://raw.githubusercontent.com/naobservatory/swab-based-p2ra/refs/heads/main/tables/posteriors.tsv"</span>)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>thinned_posteriors <span class="ot">&lt;-</span> posteriors <span class="sc">%&gt;%</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(group <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Rhinoviruses"</span>, <span class="st">"Coronaviruses (seasonal)"</span>, <span class="st">"Coronaviruses (SARS-CoV-2)"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, group, mu_swab, phi_swab, mu_ww, phi_ww) <span class="sc">%&gt;%</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(species, group) <span class="sc">%&gt;%</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_sample</span>(<span class="at">n =</span> n_samples) <span class="sc">%&gt;%</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">rep =</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">n</span>()) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>posteriors <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"https://raw.githubusercontent.com/naobservatory/swab-based-p2ra/refs/heads/main/tables/posteriors.tsv"</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>thinned_posteriors <span class="ot">&lt;-</span> posteriors <span class="sc">%&gt;%</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(group <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Rhinoviruses"</span>, <span class="st">"Coronaviruses (seasonal)"</span>, <span class="st">"Coronaviruses (SARS-CoV-2)"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(species, group, mu_swab, phi_swab, mu_ww, phi_ww) <span class="sc">%&gt;%</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(species, group) <span class="sc">%&gt;%</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_sample</span>(<span class="at">n =</span> n_samples) <span class="sc">%&gt;%</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">rep =</span> <span class="fu">row_number</span>()) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Next, for each virus and for each replicate (posterior draw), we simulate the wastewater and swab reads according to the model. We then summarize each replicate by the cumulative incidence at detection for each sample type.</p>
 <div class="cell">
@@ -405,17 +411,19 @@ window.Quarto = {
 <span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>      cumulative_incidence[<span class="fu">which.max</span>(cum_reads_swab <span class="sc">&gt;=</span> detection_threshold)],</span>
 <span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>      <span class="fl">1.0</span></span>
 <span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop_last"</span>,</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>In a small number of replicates, a method does not detect the virus by the end of the simulations. In these cases, the cumulative incidence at detection is between 50% and 100%, and we record it as 100%. We can confirm that this is rare (counts out of 2000 replicates per virus):</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>detection <span class="sc">%&gt;%</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">swab =</span> <span class="fu">sum</span>(ci_at_detection_swab <span class="sc">&gt;</span> <span class="fl">0.99</span>),</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">wastewater =</span> <span class="fu">sum</span>(ci_at_detection_ww <span class="sc">&gt;</span> <span class="fl">0.99</span>)</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>group) <span class="sc">%&gt;%</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  kable</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">wastewater =</span> <span class="fu">sum</span>(ci_at_detection_ww <span class="sc">&gt;</span> <span class="fl">0.99</span>),</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop"</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>group) <span class="sc">%&gt;%</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  kable</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
 <thead>
@@ -434,12 +442,12 @@ window.Quarto = {
 <tr class="even">
 <td style="text-align: left;">HCoV-HKU1</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">3</td>
+<td style="text-align: right;">1</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">HCoV-NL63</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">HCoV-OC43</td>
@@ -454,7 +462,7 @@ window.Quarto = {
 <tr class="even">
 <td style="text-align: left;">Rhinovirus B</td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">4</td>
+<td style="text-align: right;">1</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Rhinovirus C</td>
@@ -517,13 +525,13 @@ ratio
 HCoV-229E
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.000722
+0.000703
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.000615
+0.000628
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-1.175
+1.119
 </td>
 </tr>
 <tr>
@@ -531,13 +539,13 @@ HCoV-229E
 HCoV-HKU1
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.004255
+0.004499
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.001364
+0.001385
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-3.120
+3.249
 </td>
 </tr>
 <tr>
@@ -545,13 +553,13 @@ HCoV-HKU1
 HCoV-NL63
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.003247
+0.003203
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.002126
+0.002206
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-1.527
+1.452
 </td>
 </tr>
 <tr>
@@ -559,13 +567,13 @@ HCoV-NL63
 HCoV-OC43
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.001137
+0.001110
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.001453
+0.001434
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.782
+0.774
 </td>
 </tr>
 <tr>
@@ -573,13 +581,13 @@ HCoV-OC43
 Rhinovirus A
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.004307
+0.004124
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.003714
+0.003858
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-1.160
+1.069
 </td>
 </tr>
 <tr>
@@ -587,13 +595,13 @@ Rhinovirus A
 Rhinovirus B
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.005154
+0.005589
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.001626
+0.001704
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-3.169
+3.280
 </td>
 </tr>
 <tr>
@@ -601,13 +609,13 @@ Rhinovirus B
 Rhinovirus C
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.000721
+0.000707
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.001275
+0.001296
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.565
+0.546
 </td>
 </tr>
 <tr>
@@ -618,10 +626,10 @@ SARS-CoV-2
 0.000018
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.000896
+0.000872
 </td>
 <td style="text-align:right;width: 3cm; font-family: monospace;">
-0.021
+0.020
 </td>
 </tr>
 </tbody>
