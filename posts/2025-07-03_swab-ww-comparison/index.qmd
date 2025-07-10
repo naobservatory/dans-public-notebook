@@ -1,0 +1,371 @@
+---
+title: "Simulating the sensitivity of swabs and wastewater"
+draft: true
+format:
+  html:
+    code-fold: false 
+execute:
+  cache: false
+knitr:
+  opts_chunk: 
+    message: true
+editor: source 
+author: Dan Rice
+date: 2025-07-03
+date-modified: today
+---
+
+[Recently](https://naobservatory.org/blog/swab-based-p2ra/),
+we used our paired wastewater and swab samples to jointly estimate the
+distribution of viral reads we expect to see in a sample of either type
+when a virus is at a given prevalence in the sampled population.
+Here, we use the fitted model to estimate the cumulative incidence at detection
+for both sample types using the following approach:
+
+1. Simulate an exponentially growing outbreak.
+2. Specify a particular sampling scheme for swabs and wastewater:
+number of swabs in a pool, sequencing depth, read length, etc.
+3. For each sample from our posterior distribution of the previously fitted
+read count model, simulate the timecourse of viral reads spanning a junction.
+4. Use the simulations to calculate the joint distribution of cumulative incidence at detection in both sample types.
+
+This is meant as a quick first pass at the problem, not a definitive
+account of the merits of swabs vs. wastewater.
+
+# Setup
+
+```{r}
+#| label: setup
+#| message: false
+
+library(dplyr)
+library(tibble)
+library(readr)
+library(ggplot2)
+library(slider)
+library(knitr)
+library(kableExtra)
+
+set.seed(20250703)
+
+theme_set(theme_minimal())
+
+# Colors borrowed from https://github.com/JLSteenwyk/ggpubfigs
+wong_eight <- c(
+  "#E69F00",
+  "#56B4E9",
+  "#009E73",
+  "#F0E442",
+  "#0072B2",
+  "#D55E00",
+  "#CC79A7",
+  "#000000"
+)
+options(
+  ggplot2.discrete.colour = function()
+    scale_colour_manual(values = wong_eight)
+)
+options(
+  ggplot2.discrete.fill = function()
+    scale_fill_manual(values = wong_eight)
+)
+
+# For axis labels
+scientific <- function(x) {
+  parse(text = sprintf("10^{%f}", log10(x)))
+}
+
+# Geometric mean
+gm <- function(x) exp(mean(log(x)))
+```
+
+# Model
+
+## Epidemic
+
+We assume an epidemic that grows (deterministically) exponentially starting
+from one infected person in a population of 2.5M people (roughly the DITP sewershed).
+We stop the simulation when $\approx 50\%$ of people have been infected.
+We also assume that infected people shed the virus deterministically for a fixed
+number of days, starting with the day they are infected.
+
+```{r}
+#| label: epi-model
+#| fig-cap: Epidemic progress by day
+
+# All times in days
+doubling_time <- 4
+growth_rate <- log(2) / doubling_time
+shedding_duration <- 7
+
+population_size <- 2.5e6
+# Grow until ~50% of people have been infected
+max_day <- floor(log(growth_rate * population_size / 2) / growth_rate)
+
+epi_model <- tibble(
+  day = 0:max_day,
+  # Exponential growth from a single case
+  incidence = exp(day * growth_rate) / population_size,
+  cumulative_incidence = cumsum(incidence),
+  # Assume constant shedding for `shedding_duration` days
+  prevalence = slide_dbl(incidence, sum, .before = shedding_duration - 1, .complete = FALSE)
+)
+
+epi_model %>%
+  ggplot(aes(x = day)) +
+  geom_line(aes(y = cumulative_incidence, color = "Cumulative Incidence")) +
+  geom_line(aes(y = prevalence, color = "Prevalence")) +
+  labs(x = NULL, y = NULL, color = NULL)
+```
+
+
+## Sampling and sequencing
+
+* We assume that the wastewater and pooled nasal swabs are collected every day,
+and that each sample is sequenced to a constant number of total reads.
+* For each sample type, we assume that all reads are the same length and that
+coverage is even along the genome so that
+the probability that a read covers the junction is the read length divided
+by the genome length.
+* We assume that a junction is detected when the cumulative number of reads that cover it across all samples is greater than or equal to a threshold.
+
+```{r}
+#| label: sampling-model
+
+# TODO: implement sampling interval. Currently implicitly daily
+# sampling_interval <- 1
+
+swab_pool_size <- 300
+total_reads_swab <- 2e6
+total_reads_ww <- 3e9
+
+# All lengths in bp
+genome_length <- 7000
+read_length_swab <- 2000
+read_length_ww <- 170
+
+# Probability that a read covers the junction, assuming even coverage
+pr_junction_swab <- read_length_swab / genome_length
+pr_junction_ww <- read_length_ww / genome_length
+
+# Number of reads required to detect a junction
+detection_threshold <- 1
+```
+
+# Simulations
+
+For model and parameter definitions, see the [appendix](https://naobservatory.github.io/swab-based-p2ra/) to our blog post.
+
+First, we load our posterior samples from the swab-p2ra blog post repo.
+Then, we filter and downsample them in three ways:
+
+1. We take only the Rhinoviruses and Coronaviruses, the viruses for which we had
+enough of both swab and wastewater reads to get decent parameter estimates.
+2. We keep the read-model parameters: $\mu_{swab}$, $\phi_{swab}$, $\mu_{ww}$, and $\phi_{ww}$. (We don't need the estimates of the prevalence in the Boston samples since our simulations provide the prevalence of the virus.)
+3. To speed up experimentation, for each virus, we randomly downsample the posterior draws.
+
+```{r}
+#| label: posteriors
+
+n_samples = 2000
+
+posteriors <- read_tsv(
+  "https://raw.githubusercontent.com/naobservatory/swab-based-p2ra/refs/heads/main/tables/posteriors.tsv",
+  show_col_types = FALSE,
+  )
+
+thinned_posteriors <- posteriors %>%
+  filter(group %in% c("Rhinoviruses", "Coronaviruses (seasonal)", "Coronaviruses (SARS-CoV-2)")) %>%
+  select(species, group, mu_swab, phi_swab, mu_ww, phi_ww) %>%
+  group_by(species, group) %>%
+  slice_sample(n = n_samples) %>%
+  mutate(rep = row_number()) 
+```
+
+Next, for each virus and for each replicate (posterior draw), we simulate the wastewater
+and swab reads according to the model.
+We then summarize each replicate by the cumulative incidence at detection for each sample type.
+
+```{r}
+#| label: simulate-detection
+
+detection <- thinned_posteriors %>%
+  cross_join(epi_model) %>%
+  group_by(rep, .add = TRUE) %>%
+  mutate(
+    mean_ww = prevalence * mu_ww * total_reads_ww * pr_junction_ww,
+    reads_ww = rnbinom(n(), size = phi_ww, mu = mean_ww),
+    cum_reads_ww = cumsum(reads_ww),
+    # Number of swabs from infected people
+    pos_swabs = rbinom(n(), size = swab_pool_size, prob = prevalence),
+    mean_swab = (pos_swabs / swab_pool_size) * mu_swab * total_reads_swab * pr_junction_swab,
+    # Use a finite overdispersion when size and mu are both zero
+    # avoids generating NaNs. Should always give zero.
+    reads_swab = rnbinom(n(), size = pmax(phi_swab * pos_swabs, 1e-10), mu = mean_swab),
+    cum_reads_swab = cumsum(reads_swab),
+  ) %>%
+  summarize(
+    mu_ww = first(mu_ww),
+    phi_ww = first(phi_ww),
+    mu_swab = first(mu_swab),
+    phi_swab = first(phi_swab),
+    # If undetected, use 100% CI
+    ci_at_detection_ww = if_else(
+      any(cum_reads_ww >= detection_threshold),
+      cumulative_incidence[which.max(cum_reads_ww >= detection_threshold)],
+      1.0
+    ),
+    ci_at_detection_swab = if_else(
+      any(cum_reads_swab >= detection_threshold),
+      cumulative_incidence[which.max(cum_reads_swab >= detection_threshold)],
+      1.0
+    ),
+    .groups = "drop_last",
+  )
+```
+
+In a small number of replicates, a method does not detect the virus by the end of the simulations.
+In these cases, the cumulative incidence at detection is between 50% and 100%,
+and we record it as 100%.
+We can confirm that this is rare (counts out of `r n_samples` replicates per virus):
+```{r}
+#| label: undetected
+#| fig-cap: Number of replicates where the virus is not detected
+
+detection %>%
+  summarize(
+    swab = sum(ci_at_detection_swab > 0.99),
+    wastewater = sum(ci_at_detection_ww > 0.99),
+    .groups = "drop",
+  ) %>%
+  select(-group) %>%
+  kable
+```
+
+# Results
+
+Below are the results of our simulations.
+Note that all the values here are conditional on the parameters defined
+in the Model section.
+If we change the pool sizes, sequencing depths, read lengths, etc, the comparisons
+will change.
+
+First, we summarize the simulations with the geometric mean cumulative incidence
+at detection for each virus and sample type:
+
+```{r}
+#| label: geom-means
+#| fig-cap: Geometric mean cumulative incidence at detection. Ratio is wastewater CI / swab CI. Ratio < 1 favors wastewater; ratio > 1 favors swabs.
+
+geom_means <- detection %>%
+  summarize(
+    ci_at_detection_ww = gm(ci_at_detection_ww),
+    ci_at_detection_swab = gm(ci_at_detection_swab),
+    ratio = ci_at_detection_ww / ci_at_detection_swab,
+    .groups = "drop",
+  )
+
+geom_means %>%
+  select(- group) %>%
+  rename(
+    wastewater = ci_at_detection_ww,
+    swab = ci_at_detection_swab,
+  ) %>%
+  kable(digits = c(NA, 6, 6, 3)) %>%
+  column_spec(c(2, 3, 4), width = "3cm", monospace = TRUE) 
+```
+
+We can also plot the full joint distributions of cumulative incidence at detection:
+
+```{r}
+#| label: joint-distribution
+#| fig-cap: "Cumulative incidence at detection: wastewater vs. swab"
+#| fig-cap-location: top
+#| fig-subcap: "Black dot show geometric means. Grey line is equal incidence."
+
+detection %>%
+  ggplot(aes(ci_at_detection_swab, ci_at_detection_ww, color = group)) +
+  geom_abline(intercept = 0, slope = 1, color = "grey") +
+  geom_density_2d() +
+  geom_point(data = geom_means, color = "black") +
+  scale_x_log10() +
+  scale_y_log10() +
+  facet_wrap(~species, nrow = 2) +
+  theme(legend.position = "none") +
+  labs(x = NULL, y = NULL)
+```
+
+Finally, we can plot the distribution of the ratio of CI at detection in the two methods:
+
+```{r}
+#| label: ratio
+#| fig-cap: CI at wastewater detection / CI at swab detection
+#| fig-subcap: Vertical bars are 15, 50, and 85th percentiles. Ratio < 1 favors wastewater; ratio > 1 favors swabs.
+
+detection %>%
+  mutate(ratio = ci_at_detection_ww / ci_at_detection_swab) %>%
+  ggplot(aes(ratio, species, fill = group)) +
+  geom_vline(xintercept = 1, color = "darkgrey") +
+  geom_violin(draw_quantiles = c(0.15, 0.5, 0.85)) +
+  scale_x_continuous(
+    transform = "log10",
+    labels = scientific,
+    breaks = c(1e-2, 1, 1e2)
+    ) +
+  theme(legend.position = "none") +
+  labs(x = NULL, y = NULL)
+```
+
+# Heuristic analysis
+
+Do these numbers make sense?
+In particular, is it reasonable that with these parameters for most viruses,
+we expect similar cumulative incidence at detection for both sample types?
+As a sanity check, we can think about the prevalence required to expect to start
+seeing reads covering the junction.
+For wastewater, this is straightforward: it's the prevalence at which
+$p \mu_{ww}$ times the sequencing depth times the probability of covering 
+the junction is about one.
+For swabs, it's more complicated.
+Very high $\mu_{swab}$ doesn't help us if we don't have any positive swabs.
+So instead we can ask two questions:
+
+1. How many positive swabs do we need in our pool to expect to find reads
+overlapping the junction?
+2. Given our pool size, what prevalence do we need to expect to get that many positive swabs?
+
+Critically, we always need at least one positive swab, which
+puts a floor on the required prevalence at one over the pool size.
+
+This analysis leaves out a lot of details, but it should be a reasonable rough check.
+
+```{r}
+#| label: sanity-check
+#| fig-cap: Geometric mean heuristic prevalence at detection
+
+heuristics <- thinned_posteriors %>%
+  mutate(
+    prev_ww = 1 / (mu_ww * total_reads_ww * pr_junction_ww),
+    reads_per_pos_swab = mu_swab * total_reads_swab * pr_junction_swab / swab_pool_size,
+    swabs_to_detect = pmax(1, 1 / reads_per_pos_swab),
+    prev_swab = swabs_to_detect / swab_pool_size,
+    ratio = prev_ww / prev_swab,
+  ) %>%
+  summarize(
+    across(prev_ww:ratio, gm), 
+    .groups = "drop"
+  )
+
+heuristics %>%
+  select(species, swabs_to_detect, prev_ww, prev_swab, ratio) %>%
+  rename(`pos swabs required` = swabs_to_detect, wastewater = prev_ww, swab = prev_swab) %>%
+  kable(digits = c(NA, 3, 5, 5, 3)) %>%
+  column_spec(c(2, 3, 4, 5), width = "3cm", monospace = TRUE)
+```
+
+In fact, by this heuristic, we do generally expect to start seeing reads
+in both sample types when the virus is at similar prevalence (ratios close to one).
+The exception is SARS-CoV-2, where $\mu_{ww}$ is very high.
+
+Note that most of these viruses are expected to be detected with around one
+positive swab in the pool.
