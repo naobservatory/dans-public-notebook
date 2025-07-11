@@ -140,13 +140,27 @@ total_reads_swab <- 2e6
 total_reads_ww <- 3e9
 
 # All lengths in bp
-genome_length <- 7000
 read_length_swab <- 2000
 read_length_ww <- 170
 
-# Probability that a read covers the junction, assuming even coverage
-pr_junction_swab <- read_length_swab / genome_length
-pr_junction_ww <- read_length_ww / genome_length
+# genome_length <- 7000
+taxa <- tribble(
+   ~species, ~taxid, ~genome_length,
+    "Rhinovirus A", 147711L, 7200L,
+    "Rhinovirus B", 147712L, 7200L,
+    "Rhinovirus C", 463676L, 7100L,
+    "HCoV-229E", 11137L, 27500L,
+    "HCoV-OC43", 31631L, 30000L,
+    "HCoV-NL63", 277944L, 27500L,
+    "HCoV-HKU1", 290028L, 30000L,
+    "SARS-CoV-2", 2697049L, 30000L
+  ) %>%
+  mutate(
+    # Probability that a read covers the junction, assuming even coverage
+    pr_junction_swab = read_length_swab / genome_length,
+    pr_junction_ww = read_length_ww / genome_length,
+  )
+
 
 # Number of reads required to detect a junction
 detection_threshold <- 1
@@ -179,7 +193,8 @@ thinned_posteriors <- posteriors %>%
   select(species, group, mu_swab, phi_swab, mu_ww, phi_ww) %>%
   group_by(species, group) %>%
   slice_sample(n = n_samples) %>%
-  mutate(rep = row_number()) 
+  mutate(rep = row_number()) %>%
+  left_join(taxa, by = join_by(species))
 ```
 
 Next, for each virus and for each replicate (posterior draw), we simulate the wastewater
