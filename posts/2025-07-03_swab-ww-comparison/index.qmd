@@ -342,6 +342,12 @@ These simulations show that, *with these sampling and sequencing parameters*, fo
 we expect detection in swabs at 1.3 to 15 times lower cumulative incidence than in wastewater.
 The big exception is SARS-CoV-2, which sheds a lot in wastewater, for which the simulations suggest 10x lower relative abundance at detection in wastewater than in swabs.
 
+A major caveat is that we are not modeling the delay between sample collection and
+detection.
+With exponential growth, delay can be very costly in terms of cumulative incidence.
+With the `r doubling_time`-day doubling time assumed here, a two-day delay results in a `r round(exp(2 * growth_rate), 1)`-fold
+increase in the cumulative incidence at detection.
+
 # Heuristic analysis
 
 We'd like to sanity check and try to understand our simulations with a simpler heuristic calculation.
