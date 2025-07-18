@@ -200,7 +200,7 @@ window.Quarto = {
       <div>
       <div class="quarto-title-meta-heading">Modified</div>
       <div class="quarto-title-meta-contents">
-        <p class="date-modified">July 11, 2025</p>
+        <p class="date-modified">July 18, 2025</p>
       </div>
     </div>
       
@@ -290,7 +290,7 @@ window.Quarto = {
 <h1>Model</h1>
 <section id="epidemic" class="level2">
 <h2 class="anchored" data-anchor-id="epidemic">Epidemic</h2>
-<p>We assume an epidemic that grows (deterministically) exponentially starting from one infected person in a population of 2.5M people (roughly the DITP sewershed). We stop the simulation when <span class="math inline">\(\approx 50\%\)</span> of people have been infected. We also assume that infected people shed the virus at a constant rate for a fixed number of days, starting with the day they are infected.</p>
+<p>We assume an epidemic that grows (deterministically) exponentially starting from one infected person in a population of <span class="math inline">\(N = 2.5\text{M}\)</span> people (roughly the DITP sewershed). Let incidence <span class="math inline">\(i(t) = e^{r t} / N, t \geq 0\)</span>, be the fraction of the population newly infected on day <span class="math inline">\(t\)</span>. We also assume that infected people shed the virus at a constant rate for a fixed number of days, starting with the day they are infected. We define (shedding) prevalence, <span class="math inline">\(p\)</span> to be the fraction of people shedding so that <span class="math inline">\(p(t) = \sum_{t' = t - d + 1}^t i(t')\)</span>. We stop the simulation when <span class="math inline">\(\approx 50\%\)</span> of people have been infected.</p>
 <div class="cell" data-fig-label="epi-model">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># All times in days</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>doubling_time <span class="ot">&lt;-</span> <span class="dv">4</span></span>
@@ -330,8 +330,8 @@ window.Quarto = {
 <section id="sampling-and-sequencing" class="level2">
 <h2 class="anchored" data-anchor-id="sampling-and-sequencing">Sampling and sequencing</h2>
 <ul>
-<li>We assume that the wastewater and pooled nasal swabs are collected every day, and that each sample is sequenced to a constant number of total reads.</li>
-<li>For each sample type, we assume that all reads are the same length and that coverage is even along the genome so that the probability that a read covers the junction is the read length divided by the genome length.</li>
+<li>We assume that the wastewater and pooled nasal swabs are collected every day, and that each sample is sequenced to a constant number of total reads, which differs between swabs and wastewater.</li>
+<li>The fitted model predicts the number of reads that are assigned to the whole genome. Here, we are interested in the number of reads that overlap the junction. To predict the number of junction-covering reads, we assume that each read assigned to the genome has an equal probability of overlapping the junction. In our model, this thinning process is equivalent to multiplying the mean number of reads by this probability. For each sample type, we assume that all reads are the same length and that expected coverage is even along the genome. To cover a junction, we require a read to overlap the junction point by a certain number of bases. With these assumptions, probability of covering the junction is equal to the read length minus the required overlap divided by the genome length.</li>
 <li>We assume that a junction is detected when reads covering it are observed in two different samples.</li>
 </ul>
 <div class="cell">
@@ -645,37 +645,41 @@ p^*_{ww} \times \mu_{ww} \times \text{total reads} \times \text{Pr\{read covers 
 \]</span></p>
 <p>For swabs, the condition depends on the pool size. For small pools, the limiting factor is getting a swab from an infected person. For large pools, the limiting factor is sequencing deeply enough to observe reads from the infected swabs. Together, the condition to see one read covering the junction is: <span class="math display">\[
 p^*_{swab} \times \min(\text{pool size}, \mu_{swab} \times \text{total reads} \times \text{Pr\{read covers junction\}}) = 1.
-\]</span></p>
+\]</span> Equivalently, we can think of two regimes depending on whether the expected number of junction-covering reads per infected swab: <span class="math display">\[
+\frac{\mu_{swab} \times \text{total reads} \times \text{Pr\{read covers junction\}}}{\text{pool size}}
+\]</span> is greater than or equal to one.</p>
 <p>We can calculate these heuristics with our parameters:</p>
 <div class="cell" data-fig-label="heuristics">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>heuristics <span class="ot">&lt;-</span> thinned_posteriors <span class="sc">%&gt;%</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">prev_ww =</span> <span class="dv">1</span> <span class="sc">/</span> (mu_ww <span class="sc">*</span> total_reads_ww <span class="sc">*</span> pr_junction_ww),</span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">prev_swab =</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fu">pmin</span>(swab_pool_size, mu_swab <span class="sc">*</span> total_reads_swab <span class="sc">*</span> pr_junction_swab),</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Because prevalence and cumulative incidence are proportional for exponential</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># growth, we can use the ratio of prevalences to estimate the ratio of CI</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">ratio =</span> prev_ww <span class="sc">/</span> prev_swab,</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">ratio =</span> <span class="fu">gm</span>(ratio),</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop"</span></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="fu">left_join</span>(</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(heuristics, species, ratio),</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(geom_means, species, ratio),</span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">by =</span> <span class="fu">join_by</span>(species),</span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">suffix =</span> <span class="fu">c</span>(<span class="st">".heuristic"</span>, <span class="st">".simulation"</span>)</span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">heuristic =</span> <span class="st">"ratio.heuristic"</span>, <span class="at">simulation =</span> <span class="st">"ratio.simulation"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">digits =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="dv">2</span>, <span class="dv">2</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">column_spec</span>(<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">3</span>), <span class="at">width =</span> <span class="st">"3cm"</span>, <span class="at">monospace =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">reads_per_infected_swab =</span> mu_swab <span class="sc">*</span> pr_junction_swab <span class="sc">*</span> total_reads_swab <span class="sc">/</span> swab_pool_size,</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Because prevalence and cumulative incidence are proportional for exponential</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># growth, we can use the ratio of prevalences to estimate the ratio of CI</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">ratio =</span> prev_ww <span class="sc">/</span> prev_swab,</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">across</span>(<span class="fu">c</span>(reads_per_infected_swab, ratio), gm),</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop"</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="fu">left_join</span>(</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(heuristics, species, reads_per_infected_swab, ratio),</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(geom_means, species, ratio),</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">by =</span> <span class="fu">join_by</span>(species),</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">suffix =</span> <span class="fu">c</span>(<span class="st">".heuristic"</span>, <span class="st">".simulation"</span>)</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">heuristic =</span> <span class="st">"ratio.heuristic"</span>, <span class="at">simulation =</span> <span class="st">"ratio.simulation"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">digits =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">column_spec</span>(<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>), <span class="at">width =</span> <span class="st">"3cm"</span>, <span class="at">monospace =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
 <caption>Ratio of cumulative incidence at detection in wastewater to swabs</caption>
 <thead>
 <tr class="header">
 <th style="text-align: left;" data-quarto-table-cell-role="th">species</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">reads_per_infected_swab</th>
 <th style="text-align: right;" data-quarto-table-cell-role="th">heuristic</th>
 <th style="text-align: right;" data-quarto-table-cell-role="th">simulation</th>
 </tr>
@@ -683,41 +687,49 @@ p^*_{swab} \times \min(\text{pool size}, \mu_{swab} \times \text{total reads} \t
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">HCoV-229E</td>
+<td style="text-align: right; width: 3cm; font-family: monospace;">113.39</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">12.26</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">9.10</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">HCoV-HKU1</td>
+<td style="text-align: right; width: 3cm; font-family: monospace;">0.69</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">27.48</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">15.69</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">HCoV-NL63</td>
+<td style="text-align: right; width: 3cm; font-family: monospace;">0.15</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">8.08</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">5.74</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">HCoV-OC43</td>
+<td style="text-align: right; width: 3cm; font-family: monospace;">0.38</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">7.23</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">3.75</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Rhinovirus A</td>
+<td style="text-align: right; width: 3cm; font-family: monospace;">0.21</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">3.49</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">2.51</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Rhinovirus B</td>
+<td style="text-align: right; width: 3cm; font-family: monospace;">1.15</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">14.24</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">7.67</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Rhinovirus C</td>
+<td style="text-align: right; width: 3cm; font-family: monospace;">1.63</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">2.65</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">1.31</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">SARS-CoV-2</td>
+<td style="text-align: right; width: 3cm; font-family: monospace;">4.08</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">0.22</td>
 <td style="text-align: right; width: 3cm; font-family: monospace;">0.11</td>
 </tr>
