@@ -1,8 +1,18 @@
-.Rproj.user
+.Rproj.user/
 .Rhistory
 .RData
 .Ruserdata
+.Rprofile
+.Renviron
 *.Rproj
 
 /.quarto/
 /_site/
+/_extensions/
+
+*_cache/
+*_files/
+*.html
+*.pdf
+
+/venv/
