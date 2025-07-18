@@ -84,10 +84,14 @@ gm <- function(x) exp(mean(log(x)))
 ## Epidemic
 
 We assume an epidemic that grows (deterministically) exponentially starting
-from one infected person in a population of 2.5M people (roughly the DITP sewershed).
-We stop the simulation when $\approx 50\%$ of people have been infected.
+from one infected person in a population of $N = 2.5\text{M}$ people (roughly the DITP sewershed).
+Let incidence $i(t) = e^{r t} / N, t \geq 0$, be the fraction of the population newly infected
+on day $t$.
 We also assume that infected people shed the virus at a constant rate for a fixed
 number of days, starting with the day they are infected.
+We define (shedding) prevalence, $p$ to be the fraction of people shedding
+so that $p(t) = \sum_{t' = t - d + 1}^t i(t')$.
+We stop the simulation when $\approx 50\%$ of people have been infected.
 
 ```{r}
 #| fig-label: epi-model
@@ -124,11 +128,16 @@ epi_model %>%
 ## Sampling and sequencing
 
 * We assume that the wastewater and pooled nasal swabs are collected every day,
-and that each sample is sequenced to a constant number of total reads.
-* For each sample type, we assume that all reads are the same length and that
-coverage is even along the genome so that
-the probability that a read covers the junction is the read length divided
-by the genome length.
+and that each sample is sequenced to a constant number of total reads, which differs between swabs and wastewater.
+* The fitted model predicts the number of reads that are assigned to the whole genome.
+Here, we are interested in the number of reads that overlap the junction.
+To predict the number of junction-covering reads, we assume that each read assigned to the genome has an equal probability of overlapping the junction.
+In our model, this thinning process is equivalent to multiplying the mean number of reads
+by this probability.
+For each sample type, we assume that all reads are the same length and that
+expected coverage is even along the genome.
+To cover a junction, we require a read to overlap the junction point by a certain number of bases.
+With these assumptions, probability of covering the junction is equal to the read length minus the required overlap divided by the genome length.
 * We assume that a junction is detected when reads covering it are observed in two different samples.
 
 ```{r}
@@ -374,6 +383,12 @@ Together, the condition to see one read covering the junction is:
 $$
 p^*_{swab} \times \min(\text{pool size}, \mu_{swab} \times \text{total reads} \times \text{Pr\{read covers junction\}}) = 1.
 $$
+Equivalently, we can think of two regimes depending on whether the expected
+number of junction-covering reads per infected swab:
+$$
+\frac{\mu_{swab} \times \text{total reads} \times \text{Pr\{read covers junction\}}}{\text{pool size}}
+$$
+is greater than or equal to one.
 
 We can calculate these heuristics with our parameters:
 
@@ -384,24 +399,25 @@ heuristics <- thinned_posteriors %>%
   mutate(
     prev_ww = 1 / (mu_ww * total_reads_ww * pr_junction_ww),
     prev_swab = 1 / pmin(swab_pool_size, mu_swab * total_reads_swab * pr_junction_swab),
+    reads_per_infected_swab = mu_swab * pr_junction_swab * total_reads_swab / swab_pool_size,
     # Because prevalence and cumulative incidence are proportional for exponential
     # growth, we can use the ratio of prevalences to estimate the ratio of CI
     ratio = prev_ww / prev_swab,
   ) %>%
   summarize(
-    ratio = gm(ratio),
+    across(c(reads_per_infected_swab, ratio), gm),
     .groups = "drop"
   )
 
 left_join(
-  select(heuristics, species, ratio),
+  select(heuristics, species, reads_per_infected_swab, ratio),
   select(geom_means, species, ratio),
   by = join_by(species),
   suffix = c(".heuristic", ".simulation")
 ) %>%
   rename(heuristic = "ratio.heuristic", simulation = "ratio.simulation") %>%
-  kable(digits = c(NA, 2, 2)) %>%
-  column_spec(c(2, 3), width = "3cm", monospace = TRUE)
+  kable(digits = c(NA, 2, 2, 2)) %>%
+  column_spec(c(2, 3, 4), width = "3cm", monospace = TRUE)
 ```
 
 The heuristics and simulations broadly agree, with the heuristic being roughly
