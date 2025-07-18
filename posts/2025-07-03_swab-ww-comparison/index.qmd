@@ -1,6 +1,6 @@
 ---
 title: "Simulating the sensitivity of swabs and wastewater"
-draft: true
+draft: false
 format:
   html:
     code-fold: false 
