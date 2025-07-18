@@ -7,6 +7,27 @@
     "text": "Informal writeups by Dan Rice of his work on the Nucleic Acid Observatory. The intended audience is typically other NAO team members, especially future Dan. Expect incomplete posts, insufficient background, broken links to non-public documents, etc. For polished, accessible writeups of NAO work, see our blog."
   },
   {
+    "objectID": "posts/2025-07-03_swab-ww-comparison/index.html",
+    "href": "posts/2025-07-03_swab-ww-comparison/index.html",
+    "title": "Simulating the sensitivity of swabs and wastewater",
+    "section": "",
+    "text": "Recently, we used our paired wastewater and swab samples to jointly estimate the distribution of viral reads we expect to see in a sample of either type when a virus is at a given prevalence in the sampled population. Here, we use the fitted model to estimate the cumulative incidence at detection for both sample types using the following approach:\nThis is meant as a quick first pass at the problem, not a definitive account of the merits of swabs vs. wastewater."
+  },
+  {
+    "objectID": "posts/2025-07-03_swab-ww-comparison/index.html#epidemic",
+    "href": "posts/2025-07-03_swab-ww-comparison/index.html#epidemic",
+    "title": "Simulating the sensitivity of swabs and wastewater",
+    "section": "Epidemic",
+    "text": "Epidemic\nWe assume an epidemic that grows (deterministically) exponentially starting from one infected person in a population of \\(N = 2.5\\text{M}\\) people (roughly the DITP sewershed). Let incidence \\(i(t) = e^{r t} / N, t \\geq 0\\), be the fraction of the population newly infected on day \\(t\\). We also assume that infected people shed the virus at a constant rate for a fixed number of days, starting with the day they are infected. We define (shedding) prevalence, \\(p\\) to be the fraction of people shedding so that \\(p(t) = \\sum_{t' = t - d + 1}^t i(t')\\). We stop the simulation when \\(\\approx 50\\%\\) of people have been infected.\n\n# All times in days\ndoubling_time &lt;- 4\ngrowth_rate &lt;- log(2) / doubling_time\nshedding_duration &lt;- 7\n\npopulation_size &lt;- 2.5e6\n# Grow until ~50% of people have been infected.\n# With growth rate r, cumulative incidence is approximately (1/r) exp(r t).\n# CI \\approx N / 2 =&gt; t \\approx log(N r / 2) / r\nmax_day &lt;- ceiling(log(growth_rate * population_size / 2) / growth_rate)\n\nepi_model &lt;- tibble(\n  day = 0:max_day,\n  # Exponential growth from a single case\n  incidence = exp(day * growth_rate) / population_size,\n  cumulative_incidence = cumsum(incidence),\n  # Assume constant shedding for `shedding_duration` days\n  prevalence = slide_dbl(incidence, sum, .before = shedding_duration - 1, .complete = FALSE)\n)\n\nepi_model %&gt;%\n  ggplot(aes(x = day)) +\n  geom_line(aes(y = cumulative_incidence, color = \"Cumulative Incidence\")) +\n  geom_line(aes(y = prevalence, color = \"Prevalence\")) +\n  labs(x = NULL, y = NULL, color = NULL)\n\n\n\n\nEpidemic progress by day"
+  },
+  {
+    "objectID": "posts/2025-07-03_swab-ww-comparison/index.html#sampling-and-sequencing",
+    "href": "posts/2025-07-03_swab-ww-comparison/index.html#sampling-and-sequencing",
+    "title": "Simulating the sensitivity of swabs and wastewater",
+    "section": "Sampling and sequencing",
+    "text": "Sampling and sequencing\n\nWe assume that the wastewater and pooled nasal swabs are collected every day, and that each sample is sequenced to a constant number of total reads, which differs between swabs and wastewater.\nThe fitted model predicts the number of reads that are assigned to the whole genome. Here, we are interested in the number of reads that overlap the junction. To predict the number of junction-covering reads, we assume that each read assigned to the genome has an equal probability of overlapping the junction. In our model, this thinning process is equivalent to multiplying the mean number of reads by this probability. For each sample type, we assume that all reads are the same length and that expected coverage is even along the genome. To cover a junction, we require a read to overlap the junction point by a certain number of bases. With these assumptions, probability of covering the junction is equal to the read length minus the required overlap divided by the genome length.\nWe assume that a junction is detected when reads covering it are observed in two different samples.\n\n\n# TODO: implement sampling interval. Currently implicitly daily\n# sampling_interval &lt;- 1\n\nswab_pool_size &lt;- 300\ntotal_reads_swab &lt;- 2e6\ntotal_reads_ww &lt;- 3e9\n\n# All lengths in bp\nread_length_swab &lt;- 2000\nread_length_ww &lt;- 170\n# To observe a junction, require 15bp on either side\noverlap_required &lt;- 30\n\ntaxa &lt;- tribble(\n   ~species, ~taxid, ~genome_length,\n    \"Rhinovirus A\", 147711L, 7200L,\n    \"Rhinovirus B\", 147712L, 7200L,\n    \"Rhinovirus C\", 463676L, 7100L,\n    \"HCoV-229E\", 11137L, 27500L,\n    \"HCoV-OC43\", 31631L, 30000L,\n    \"HCoV-NL63\", 277944L, 27500L,\n    \"HCoV-HKU1\", 290028L, 30000L,\n    \"SARS-CoV-2\", 2697049L, 30000L\n  ) %&gt;%\n  mutate(\n    # Probability that a read covers the junction, assuming even coverage\n    pr_junction_swab = (read_length_swab - overlap_required) / genome_length,\n    pr_junction_ww = (read_length_ww - overlap_required)/ genome_length,\n  )\n\n\n# Number of samples required to detect a junction\ndetection_samples &lt;- 2"
+  },
+  {
     "objectID": "posts/2024-02-22_StochasticMVP/index.html",
     "href": "posts/2024-02-22_StochasticMVP/index.html",
     "title": "NAO Cost Estimate MVP – Adding noise",
@@ -228,6 +249,6 @@
     "href": "index.html",
     "title": "Dan's NAO notebook",
     "section": "",
-    "text": "Date\n\n\nTitle\n\n\n\n\n\n\n2024-03-25\n\n\nNAO Cost Estimate – Summary\n\n\n\n\n2024-03-04\n\n\nNAO Cost Estimate MVP – Adding noise\n\n\n\n\n2024-02-13\n\n\nNAO Cost Estimate MVP – Optimizing the sampling interval\n\n\n\n\n2024-02-02\n\n\nNAO Cost Estimate MVP\n\n\n\n\n\nNo matching items"
+    "text": "Date\n\n\nTitle\n\n\n\n\n\n\n2025-07-03\n\n\nSimulating the sensitivity of swabs and wastewater\n\n\n\n\n2024-03-25\n\n\nNAO Cost Estimate – Summary\n\n\n\n\n2024-03-04\n\n\nNAO Cost Estimate MVP – Adding noise\n\n\n\n\n2024-02-13\n\n\nNAO Cost Estimate MVP – Optimizing the sampling interval\n\n\n\n\n2024-02-02\n\n\nNAO Cost Estimate MVP\n\n\n\n\n\nNo matching items"
   }
 ]
