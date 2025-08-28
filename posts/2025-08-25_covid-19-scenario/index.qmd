@@ -1,0 +1,392 @@
+---
+title: "Simulating detection of COVID-19 with wastewater MGS"
+draft: false
+format:
+  html:
+    code-fold: false 
+execute:
+  cache: false
+knitr:
+  opts_chunk: 
+    message: true
+editor: source 
+author: Dan Rice
+date: 2025-08-25
+date-modified: today
+---
+
+# Objective
+
+To get a very rough answer to the question:
+If a wastewater MGS surveillance system had been operational in 2020,
+when would it have detected SARS-CoV-2 reads?
+
+# Setup
+
+```{r}
+#| label: setup
+#| code-fold: true
+#| message: false
+
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(purrr)
+library(ggplot2)
+library(slider)
+
+set.seed(20250703)
+
+theme_set(theme_minimal())
+
+# Colors borrowed from https://github.com/JLSteenwyk/ggpubfigs
+wong_eight <- c(
+  "#E69F00",
+  "#56B4E9",
+  "#009E73",
+  "#F0E442",
+  "#0072B2",
+  "#D55E00",
+  "#CC79A7",
+  "#000000"
+)
+options(
+  ggplot2.discrete.colour = function()
+    scale_colour_manual(values = wong_eight)
+)
+options(
+  ggplot2.discrete.fill = function()
+    scale_fill_manual(values = wong_eight)
+)
+```
+
+# Model
+
+## Epidemic
+
+- A single deterministic incidence curve for one population
+- Exponential growth for two months starting from a single case
+- NOT an SIR model, but exponential growth of incidence is an intermediate-time
+  approximate solution to SIR
+
+```{r}
+simulate_epidemic <- function(
+  population_size,
+  doubling_time, # in days
+  day_zero # date when incidence = 1 case
+){
+  growth_rate <- log(2) / doubling_time
+  max_day <- 60
+  tibble(
+    day = 0:max_day,
+    date = day_zero + day,
+    # Exponential growth from a single case
+    incidence = exp(day * growth_rate) / population_size,
+    cumulative_incidence = cumsum(incidence),
+    # slide_dbl includes the current day plus .before days before it.
+    weekly_incidence = slide_dbl(incidence, sum, .before = 6, .complete = FALSE),
+  )
+}
+```
+
+## Detection
+
+- Model reads as negative binomial with an expectation set by the
+  weekly incidence, $RA_i(1%)$, and the number of reads sequenced per sample.
+- Detection is based on observing at least `detection_reads` cumulative reads across all samples.
+
+```{r}
+simulate_detection <- function(
+    epi_sim, # output of `simulate_epidemic`
+    num_sites,
+    samples_per_site_per_day,
+    ra_i_01, # expected relative abundance at 1% weekly incidence
+    phi, # overdispersion parameter for read counts
+    detection_reads, # number of cumulative reads required to detect virus
+    delay_days, # days of delay between sample collection and detection
+    reads_per_sample,
+    ... # absorb unused parameters. allows us to use pmap with the full input data
+) {
+  mu <- ra_i_01 * 100
+  num_reps <- 100
+  epi_sim %>%
+    # For each day in the simulation, simulate num_reps replicates
+    # of the daily sampling process
+    cross_join(
+      expand_grid(
+        rep = 1:num_reps,
+        site = 1:num_sites,
+        sample = 1:samples_per_site_per_day,
+        )
+    ) %>%
+    # Simulate reads
+    mutate(
+      expected_reads = weekly_incidence * mu * reads_per_sample,
+      reads = rnbinom(n(), size = phi, mu = expected_reads),
+    ) %>%
+    # Add sites and samples together
+    summarise(
+      reads = sum(reads),
+      .by = day:rep,
+    ) %>%
+    # Get cumulative reads per day
+    mutate(
+      cumulative_reads = cumsum(reads),
+      .by = rep,
+    ) %>%
+    # Simulate detection
+    summarise(
+      threshold_day = day[which.max(cumulative_reads >= detection_reads)],
+      detection_day = threshold_day + delay_days,
+      .by = rep,
+    ) %>%
+    left_join(
+      epi_sim,
+      by = join_by(detection_day == day),
+    ) %>%
+    # Return median detection date and cumulative incidence across reps 
+    summarise(
+      across(c(date, cumulative_incidence), median),
+    )
+}
+```
+
+# Parameters
+
+## Epidemic parameters
+
+- Start with the median estimated number of US infections from the SI of
+  [this paper](https://www.nature.com/articles/s41586-021-04130-w).
+- Fit an exponential growth curve to the estimates to get growth rate
+  and projected day when the first person was infected.
+
+```{r}
+estimated_infections <- tribble(
+ ~date, ~infections,
+ "1/21/2020", 7,
+ "1/22/2020", 8,
+ "1/23/2020", 11,
+ "1/24/2020", 13,
+ "1/25/2020", 16,
+ "1/26/2020", 18,
+ "1/27/2020", 21,
+ "1/28/2020", 26,
+ "1/29/2020", 32,
+ "1/30/2020", 39,
+ "1/31/2020", 47,
+ "2/1/2020", 55,
+ "2/2/2020", 62,
+ "2/3/2020", 75,
+ "2/4/2020", 92,
+ "2/5/2020", 111,
+ "2/6/2020", 136,
+ "2/7/2020", 165,
+ "2/8/2020", 193,
+ "2/9/2020", 217,
+ "2/10/2020", 261,
+ "2/11/2020", 322,
+ "2/12/2020", 387,
+ "2/13/2020", 476,
+ "2/14/2020", 573,
+ "2/15/2020", 664,
+ "2/16/2020", 749,
+ "2/17/2020", 887,
+ "2/18/2020", 1072,
+ "2/19/2020", 1301,
+ "2/20/2020", 1566,
+ "2/21/2020", 1888
+) %>%
+  mutate(
+    date = mdy(date),
+    day = as.numeric(date - min(date)),
+    total_infections = cumsum(infections),
+    )
+
+model <- lm(log(infections) ~ day, data = estimated_infections)
+doubling_time <- log(2) / coef(model)[[2]]
+# log(1) = a + b t_0
+# day_zero = first_date + t_0
+day_zero <- min(estimated_infections$date) - coef(model)[[1]] / coef(model)[[2]]
+print(doubling_time)
+print(day_zero)
+```
+
+Note this is kind of a long doubling time compared to other estimates I've seen,
+but I think it's a good idea to stick to this concrete estimate.
+
+Calculate incidence curve:
+
+```{r}
+epi_params <- expand_grid(
+    population_size = 330e6, # US population
+    day_zero = day_zero,
+    doubling_time = doubling_time,
+  ) %>%
+  mutate(epi_sim = pmap(., simulate_epidemic))
+```
+
+Check incidence curve against estimate:
+
+```{r}
+epi_params %>%
+  unnest(epi_sim) %>%
+  filter(date < ymd(20200301)) %>%
+  mutate(total_infections = cumulative_incidence * 330e6) %>%
+  ggplot(aes(date, total_infections)) +
+  geom_line() +
+  geom_point(data = estimated_infections)
+```
+
+Line is our curve; points are the input estimate.
+
+## Sensitivity parameters
+
+- Use the Rothman $RA_i(1\%)$ for SARS-CoV-2 as the baseline.
+- Also include a 10x increase as a proxy for airplane waste or an improvement in tech.
+- Require 5 reads for detection
+
+```{r}
+ra_i_01_rothman <- 6e-8 # posterior median of Rothman SARS-CoV-2 in Grimm et al 2023
+sensitivity_params <- tribble(
+  ~sensitivity, ~ra_i_01,
+  "rothman", ra_i_01_rothman,
+  "10x rothman", ra_i_01_rothman * 10,
+) %>%
+  mutate(
+    phi = 1, # prior mode for wastewater phi in the swab p2ra blog post
+    detection_reads = 5,
+  )
+```
+
+## Cost and sequencing parameters
+
+- Annual budget: $10M
+- Non-sequencing costs from this NAO quote [private doc](https://docs.google.com/spreadsheets/d/1gdml2vNYR6tKPi34nrClhaPZ_4zpMeCED_0gY_tXLcs/edit?gid=1614122669#gid=1614122669)
+
+```{r}
+budget_params <- expand_grid(
+  annual_budget = 10e6,
+  budget_per_day = annual_budget / 365,
+  cost_per_sample = 600, # ~$300 for consumables, ~$300 for wet lab labor
+  nonseq_cost_per_run = 2300, # ~$2K for wet lab labor, $300 dry lab
+)
+
+non_sequencing_delay <- 4 # shipping, wet lab, computation
+sequencing_params <- tribble(
+  ~flow_cell, ~reads_per_run, ~seq_cost_per_run, ~delay_days,
+  "10B", 10e9, 12e3, non_sequencing_delay + 1,
+  "25B", 25e9, 16e3, non_sequencing_delay + 2, # Takes an extra day to run
+)
+```
+
+## Sampling parameters
+
+- Sample daily from a number of sites.
+- We don't want to oversequence the libaries, so say that after 1B reads sequenced
+  from a sample, we don't get any new information.
+- To get around this, we can sequence multiple samples from the same location on the same day.
+  How many samples should we sequence per location per day?
+- Our budget also allows us to do at least one sequencing run per day. How many should we do?
+- Solve the constrained optimization problem:
+  - Maximize the number of useful reads we get while staying under-budget.
+  - Vary the number of runs per day and the number of samples per location per day.
+
+```{r}
+max_reads_per_sample <- 1e9 # Can't get useful information from more than 1B reads per sample
+sampling_params <- budget_params %>%
+  cross_join(sequencing_params) %>%
+  cross_join(
+    expand_grid(
+      num_sites = c(5, 10),
+      samples_per_site_per_day = seq(1, 10),
+      runs_per_day = seq(1, 2),
+      )
+    ) %>%
+  mutate(
+    cost_per_run = nonseq_cost_per_run + seq_cost_per_run,
+    samples_per_day = num_sites * samples_per_site_per_day,
+    samples_per_run = samples_per_day / runs_per_day,
+    cost_per_day = runs_per_day * cost_per_run + samples_per_day * cost_per_sample,
+    reads_per_sample = pmin(reads_per_run / samples_per_run, max_reads_per_sample),
+    reads_per_day = reads_per_sample * samples_per_day,
+  ) %>%
+  # Only consider schemes that are under budget
+  filter(cost_per_day <= budget_per_day) %>%
+  # Take the scheme with the maximum total effective reads per day
+  slice_max(
+    reads_per_day,
+    by = 1:num_sites,
+  ) %>%
+  # Break ties by lowest cost per day
+  slice_min(
+    cost_per_day,
+    by = 1:num_sites,
+  )
+
+sampling_params %>%
+  select(flow_cell, num_sites, runs_per_day, samples_per_site_per_day, reads_per_sample) %>%
+  print
+```
+
+Looks like we should always do one sequencing run, that the optimal number of samples per site
+per day varies with the flow cell and number of sites, and that we'll end up oversequencing.
+
+# Simulation results
+
+Run the simulation for every parameter combination.
+
+```{r}
+params <- epi_params %>%
+  cross_join(sampling_params) %>%
+  cross_join(sensitivity_params)
+
+sim_results <- params %>%
+  mutate(simulation = pmap(., simulate_detection)) %>%
+  unnest(simulation)
+```
+
+Detection date for different scenarios:
+
+```{r}
+#| code-fold: true
+sim_results %>%
+  ggplot(
+    aes(
+      x = date,
+      y = sensitivity,
+      color = flow_cell,
+      shape = as.factor(num_sites),
+      ),
+    ) +
+  geom_point(position = position_dodge(width = 0.1)) 
+```
+
+The 10x difference in sensitivity makes a big difference (as you'd expect).
+The flow cell and number of sites do not.
+Of course, our model doesn't account for geographic variation in spread,
+so this is not surprising.
+
+Detection cumulative incidence for different scenarios:
+
+```{r}
+#| code-fold: true
+sim_results %>%
+  ggplot(
+    aes(
+      x = cumulative_incidence,
+      y = sensitivity,
+      color = flow_cell,
+      shape = as.factor(num_sites),
+      ),
+    ) +
+  geom_point(position = position_dodge(width = 0.1)) +
+  scale_x_log10() 
+```
+
+As a table:
+
+```{r}
+sim_results %>%
+  select(sensitivity, num_sites, flow_cell, date, cumulative_incidence) %>%
+  print
+```
